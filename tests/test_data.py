@@ -6,7 +6,12 @@ from pathlib import Path
 
 import pytest
 
-from custom_components.finanzcockpit.data import FinanzDatenError, format_iban, lade_daten
+from custom_components.finanzcockpit.data import (
+    FinanzDatenError,
+    Kurs,
+    format_iban,
+    lade_daten,
+)
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
@@ -99,13 +104,15 @@ def test_kurse_nur_bei_fremdwaehrungen_noetig(tmp_path):
 def test_fehlender_kurs(tmp_path):
     konten = KONTEN.replace("waehrung: chf", "waehrung: usd")
     (tmp_path / "kurse.csv").write_text("datum;waehrung;kurs\n2026-10-31;EUR;0.9\n")
-    with pytest.raises(FinanzDatenError, match="kein Kurs für USD"):
+    with pytest.raises(FinanzDatenError, match="Kein Kurs für USD"):
         lade_daten(schreibe(tmp_path, konten, LEER))
 
 
 def test_fehlende_kursdatei(tmp_path):
     konten = KONTEN.replace("waehrung: chf", "waehrung: eur")
-    with pytest.raises(FinanzDatenError, match=r"kurse.csv \(nötig für Konten in EUR\)"):
+    with pytest.raises(
+        FinanzDatenError, match=r"Kein Kurs für EUR: weder online noch in kurse\.csv"
+    ):
         lade_daten(schreibe(tmp_path, konten, LEER))
 
 
@@ -219,3 +226,30 @@ def test_alle_fehler_werden_gemeldet(tmp_path):
 
     assert "Zeile 2" in str(err.value)
     assert "Zeile 3" in str(err.value)
+
+
+def test_online_kurse_ohne_kursdatei(tmp_path):
+    konten = KONTEN.replace("waehrung: chf", "waehrung: eur")
+    online = {"EUR": Kurs(date(2026, 10, 27), "EUR", Decimal("0.9239"), "EZB")}
+
+    daten = lade_daten(schreibe(tmp_path, konten, LEER), online)
+
+    assert daten.aktueller_kurs("EUR").quelle == "EZB"
+
+
+def test_neuester_kurs_gilt_egal_woher(tmp_path):
+    konten = KONTEN.replace("waehrung: chf", "waehrung: eur")
+    kurse = "datum;waehrung;kurs\n2026-10-27;EUR;0.95\n2026-09-30;EUR;0.93\n"
+    (tmp_path / "kurse.csv").write_text(kurse, encoding="utf-8")
+    verzeichnis = schreibe(tmp_path, konten, LEER)
+
+    # Am selben Tag hat die Datei Vorrang
+    online = {"EUR": Kurs(date(2026, 10, 27), "EUR", Decimal("0.9239"), "EZB")}
+    kurs = lade_daten(verzeichnis, online).aktueller_kurs("EUR")
+    assert (kurs.kurs, kurs.quelle) == (Decimal("0.95"), "kurse.csv")
+
+    # Ein neuerer Online-Kurs gewinnt, die Datei bleibt als Verlauf
+    online = {"EUR": Kurs(date(2026, 10, 28), "EUR", Decimal("0.9239"), "EZB")}
+    daten = lade_daten(verzeichnis, online)
+    assert daten.aktueller_kurs("EUR").quelle == "EZB"
+    assert len(daten.kurse["EUR"]) == 3

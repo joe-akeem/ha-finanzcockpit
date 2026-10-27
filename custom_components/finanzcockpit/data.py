@@ -78,6 +78,7 @@ class Kurs:
     datum: date
     waehrung: str
     kurs: Decimal
+    quelle: str = KURSE_FILE
 
 
 @dataclass(frozen=True)
@@ -142,15 +143,18 @@ class FinanzDaten:
         return {klasse: summe.quantize(RAPPEN) for klasse, summe in summen.items()}
 
 
-def lade_daten(verzeichnis: Path) -> FinanzDaten:
-    """Liest konten.yaml, saldi.csv, kurse.csv und simulation.yaml aus dem Verzeichnis."""
+def lade_daten(verzeichnis: Path, online: dict[str, Kurs] | None = None) -> FinanzDaten:
+    """Liest konten.yaml, saldi.csv, kurse.csv und simulation.yaml aus dem Verzeichnis.
+
+    `online` sind die zuletzt online geholten Kurse je Währung.
+    """
     # Erst hier importiert, weil simulation.py auf dieses Modul aufbaut
     from .simulation import lade_simulation  # noqa: PLC0415
 
     konten = lade_konten(verzeichnis / KONTEN_FILE)
     saldi = lade_saldi(verzeichnis / SALDI_FILE, konten)
     fremdwaehrungen = {k.waehrung for k in konten.values()} - {BASISWAEHRUNG}
-    kurse = lade_kurse(verzeichnis / KURSE_FILE, fremdwaehrungen)
+    kurse = lade_kurse(verzeichnis / KURSE_FILE, fremdwaehrungen, online or {})
     daten = FinanzDaten(konten=konten, saldi=saldi, kurse=kurse)
     if (pfad := verzeichnis / SIMULATION_FILE).is_file():
         daten = replace(daten, simulation=lade_simulation(pfad, daten))
@@ -308,22 +312,19 @@ def lade_saldi(pfad: Path, konten: dict[str, Konto]) -> dict[str, list[Saldo]]:
     return saldi
 
 
-def lade_kurse(pfad: Path, benoetigt: set[str]) -> dict[str, list[Kurs]]:
-    """Liest die Wechselkurse.
+def lade_kurse(pfad: Path, benoetigt: set[str], online: dict[str, Kurs]) -> dict[str, list[Kurs]]:
+    """Liest die Wechselkurse und ergänzt sie um die Online-Kurse.
 
-    Die Datei ist nur nötig, wenn es Konten in Fremdwährungen gibt.
-    Für jede davon muss mindestens ein Kurs vorhanden sein.
+    Die Datei ist optional. Am selben Tag hat ein Kurs aus der Datei
+    Vorrang vor dem Online-Kurs. Für jede Fremdwährung muss mindestens
+    ein Kurs vorhanden sein.
     """
-    if not pfad.is_file():
-        if benoetigt:
-            raise FinanzDatenError(
-                f"Datei fehlt: {pfad} (nötig für Konten in {', '.join(sorted(benoetigt))})"
-            )
-        return {}
-
     fehler: list[str] = []
-    pro_tag: dict[tuple[str, date], Kurs] = {}
-    for wo, (datum_text, waehrung_text, kurs_text) in _lies_csv(pfad, KURSE_SPALTEN, fehler):
+    pro_tag: dict[tuple[str, date], Kurs] = {
+        (kurs.waehrung, kurs.datum): kurs for kurs in online.values()
+    }
+    zeilen = _lies_csv(pfad, KURSE_SPALTEN, fehler) if pfad.is_file() else iter(())
+    for wo, (datum_text, waehrung_text, kurs_text) in zeilen:
         datum = _parse_datum(datum_text, wo, fehler)
         if datum is None:
             continue
@@ -347,7 +348,9 @@ def lade_kurse(pfad: Path, benoetigt: set[str]) -> dict[str, list[Kurs]]:
         kurse.setdefault(kurs.waehrung, []).append(kurs)
 
     if fehlend := benoetigt - set(kurse):
-        fehler.append(f"{pfad.name}: kein Kurs für {', '.join(sorted(fehlend))}")
+        fehler.append(
+            f"Kein Kurs für {', '.join(sorted(fehlend))}: weder online noch in {pfad.name}"
+        )
     if fehler:
         raise FinanzDatenError("\n".join(fehler))
     return kurse

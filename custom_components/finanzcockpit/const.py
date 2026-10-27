@@ -19,6 +19,9 @@ SERVICE_RELOAD = "reload"
 # Gespeicherte Auswahl und Regler-Werte der Simulation
 STORE_VERSION = 1
 STORE_KEY = f"{DOMAIN}.simulation"
+# Zuletzt online geholte Wechselkurse
+KURSE_STORE_KEY = f"{DOMAIN}.kurse"
+KURSE_INTERVALL = timedelta(hours=6)
 
 # Präfix der Labels, über die Konten einem Topf zugeordnet werden
 LABEL_PREFIX = "Topf: "

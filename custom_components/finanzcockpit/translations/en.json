@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Set up Finanzcockpit",
-        "description": "Finanzcockpit reads konten.yaml, saldi.csv, kurse.csv (for foreign currencies) and simulation.yaml (optional) from {pfad}. Create the files there, then click Submit.",
+        "description": "Finanzcockpit reads konten.yaml, saldi.csv and, optionally, kurse.csv and simulation.yaml from {pfad}. Create the files there, then click Submit.",
         "data": {
           "dashboard": "Show the «Finanzen» dashboard in the sidebar"
         },

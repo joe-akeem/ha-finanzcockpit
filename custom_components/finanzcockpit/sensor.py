@@ -184,6 +184,7 @@ class WaehrungSensor(SummenSensor):
             "waehrung": self.waehrung,
             "kurs": float(kurs.kurs) if kurs else 1.0,
             "kurs_stand": kurs.datum.isoformat() if kurs else None,
+            "kurs_quelle": kurs.quelle if kurs else None,
         }
 
 

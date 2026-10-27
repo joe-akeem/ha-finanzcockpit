@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Finanzcockpit einrichten",
-        "description": "Das Finanzcockpit liest die Dateien konten.yaml, saldi.csv, (bei Fremdwährungen) kurse.csv und (optional) simulation.yaml aus dem Verzeichnis {pfad}. Lege sie dort an und klicke dann auf «Senden».",
+        "description": "Das Finanzcockpit liest die Dateien konten.yaml, saldi.csv sowie (optional) kurse.csv und simulation.yaml aus dem Verzeichnis {pfad}. Lege sie dort an und klicke dann auf «Senden».",
         "data": {
           "dashboard": "Dashboard «Finanzen» in der Seitenleiste anzeigen"
         },

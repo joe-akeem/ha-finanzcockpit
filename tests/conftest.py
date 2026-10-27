@@ -6,6 +6,7 @@ import shutil
 import pytest
 
 from custom_components.finanzcockpit.const import DATA_DIR
+from custom_components.finanzcockpit.kurse_online import KURSE_URL
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
@@ -14,6 +15,28 @@ EXAMPLES = Path(__file__).parent.parent / "examples"
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Erlaubt das Laden von custom_components in allen Tests."""
     return
+
+
+# Online-Kurse in den Tests; älter als die Kurse in examples/kurse.csv
+ONLINE_KURSE = {"EUR": 0.9239, "USD": 0.8286}
+
+
+def online_kurse_mocken(aioclient_mock, datum: str = "2026-10-27", **kurse: float) -> None:
+    """Beantwortet die Abfrage der Kurse wie die Frankfurter-API."""
+    aioclient_mock.clear_requests()
+    for waehrung, kurs in {**ONLINE_KURSE, **kurse}.items():
+        aioclient_mock.get(
+            KURSE_URL,
+            params={"base": waehrung, "symbols": "CHF"},
+            json={"amount": 1.0, "base": waehrung, "date": datum, "rates": {"CHF": kurs}},
+        )
+
+
+@pytest.fixture(autouse=True)
+def online_kurse(aioclient_mock):
+    """Kein Test geht ins Internet."""
+    online_kurse_mocken(aioclient_mock)
+    return aioclient_mock
 
 
 @pytest.fixture

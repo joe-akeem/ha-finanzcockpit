@@ -1,8 +1,10 @@
 """Tests für Einrichtung, Sensoren und Labels."""
 
+from datetime import timedelta
 from pathlib import Path
 import re
 
+from aiohttp import ClientError
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er, label_registry as lr
@@ -10,7 +12,14 @@ from homeassistant.helpers.template import Template
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from custom_components.finanzcockpit.const import DOMAIN, SERVICE_RELOAD
+from custom_components.finanzcockpit.const import (
+    DOMAIN,
+    KURSE_INTERVALL,
+    KURSE_STORE_KEY,
+    SERVICE_RELOAD,
+)
+
+from .conftest import online_kurse_mocken
 
 FRONTEND = Path(__file__).parent.parent / "custom_components" / DOMAIN / "frontend"
 
@@ -122,3 +131,64 @@ async def test_ungueltige_daten(hass: HomeAssistant, daten_verzeichnis) -> None:
     entry = await richte_ein(hass)
 
     assert entry.state is ConfigEntryState.SETUP_RETRY
+
+
+async def test_online_kurse(hass: HomeAssistant, daten_verzeichnis, online_kurse) -> None:
+    """Ein neuerer Online-Kurs ersetzt den aus kurse.csv."""
+    online_kurse_mocken(online_kurse, datum="2026-11-02", EUR=0.95)
+
+    await richte_ein(hass)
+
+    eur = hass.states.get("sensor.finanzcockpit_summe_waehrung_eur")
+    assert eur.attributes["kurs"] == 0.95
+    assert eur.attributes["kurs_stand"] == "2026-11-02"
+    assert eur.attributes["kurs_quelle"] == "EZB"
+    assert float(eur.state) == 19000.00
+    assert online_kurse.call_count == 2
+
+
+async def test_ohne_kursdatei(
+    hass: HomeAssistant, daten_verzeichnis, online_kurse, hass_storage
+) -> None:
+    (daten_verzeichnis / "kurse.csv").unlink()
+
+    await richte_ein(hass)
+
+    eur = hass.states.get("sensor.finanzcockpit_summe_waehrung_eur")
+    assert (eur.attributes["kurs"], eur.attributes["kurs_quelle"]) == (0.9239, "EZB")
+    assert hass_storage[KURSE_STORE_KEY]["data"]["EUR"] == {"datum": "2026-10-27", "kurs": "0.9239"}
+
+
+async def test_offline_mit_gespeicherten_kursen(
+    hass: HomeAssistant, daten_verzeichnis, online_kurse, hass_storage
+) -> None:
+    (daten_verzeichnis / "kurse.csv").unlink()
+    hass_storage[KURSE_STORE_KEY] = {
+        "version": 1,
+        "key": KURSE_STORE_KEY,
+        "data": {
+            "EUR": {"datum": "2026-10-20", "kurs": "0.93"},
+            "USD": {"datum": "2026-10-20", "kurs": "0.80"},
+        },
+    }
+    online_kurse.clear_requests()
+    online_kurse.get(re.compile("frankfurter"), exc=ClientError())
+
+    await richte_ein(hass)
+
+    eur = hass.states.get("sensor.finanzcockpit_summe_waehrung_eur")
+    assert (eur.attributes["kurs"], eur.attributes["kurs_stand"]) == (0.93, "2026-10-20")
+
+
+async def test_kurse_nur_alle_paar_stunden(
+    hass: HomeAssistant, daten_verzeichnis, online_kurse, freezer
+) -> None:
+    entry = await richte_ein(hass)
+    assert online_kurse.call_count == 2
+
+    await entry.runtime_data.async_refresh()
+    assert online_kurse.call_count == 2
+
+    freezer.tick(KURSE_INTERVALL + timedelta(minutes=1))
+    await entry.runtime_data.async_refresh()
+    assert online_kurse.call_count == 4

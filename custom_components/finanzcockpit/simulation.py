@@ -1163,7 +1163,7 @@ def _annahmen(r: dict[str, Any], daten: FinanzDaten, datei: str, fehler: list[st
         if kurs is not None:
             kurs_eur = float(kurs.kurs)
         elif de["rente"]:
-            fehler.append(f"{datei}: kein EUR-Kurs (wirtschaft.kurs_eur oder kurse.csv)")
+            fehler.append(f"{datei}: kein EUR-Kurs (wirtschaft.kurs_eur, online oder kurse.csv)")
     if st["grenzsatz_kanton"] + st["grenzsatz_bund"] <= 0:
         fehler.append(f"{datei}, steuern: die Grenzsteuersätze ergeben 0 %")
 

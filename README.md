@@ -59,9 +59,11 @@ datum;konto_id;betrag
 - Beträge dürfen `'` als Tausendertrennzeichen enthalten und `,` oder `.` als Dezimalzeichen.
 - Zeilen, die mit `#` beginnen, sind Kommentare.
 
-### `kurse.csv`: Wechselkurse
+### Wechselkurse: online und `kurse.csv` (optional)
 
-Nur nötig, wenn es Konten in EUR oder USD gibt. `kurs` ist der Preis einer Einheit in CHF. Es gilt der neueste Kurs je Währung.
+Für Konten in EUR oder USD holt das Finanzcockpit alle 6 Stunden die Referenzkurse der Europäischen Zentralbank (über die freie [Frankfurter-API](https://frankfurter.dev), ohne Konto und ohne Schlüssel). Abgefragt wird nur der Kurs der Währung gegen CHF. Der zuletzt geholte Kurs wird gespeichert und gilt weiter, wenn die Abfrage einmal nicht klappt.
+
+`kurse.csv` ist nur noch nötig, wenn du eigene Kurse verwenden willst, zum Beispiel die Kursliste der ESTV per 31.12. `kurs` ist der Preis einer Einheit in CHF. Es gilt der neueste Kurs je Währung, egal woher. Am selben Tag hat die Datei Vorrang vor dem Online-Kurs. Woher ein Kurs stammt, zeigt das Attribut `kurs_quelle` der Währungs-Sensoren.
 
 ```
 datum;waehrung;kurs
@@ -111,7 +113,7 @@ Mögliche Startwerte: `frei`, `saeule3a_er`, `saeule3a_sie`, `pk_er`, `pk_sie`, 
 |---|---|
 | `sensor.finanzcockpit_<id>` | Neuester Saldo in Originalwährung. Attribute: `topf`, `anlageklasse`, `wert_chf`, `institut`, `eigentuemer`, `land`, `iban`, `rhythmus`, `stand` (Datum) |
 | `sensor.finanzcockpit_summe_total` | Vermögen total in CHF |
-| `sensor.finanzcockpit_summe_waehrung_<chf\|eur\|usd>` | Summe je Währung in CHF. Attribute: `anteil` (%), `betrag` (Originalwährung), `kurs`, `kurs_stand` |
+| `sensor.finanzcockpit_summe_waehrung_<chf\|eur\|usd>` | Summe je Währung in CHF. Attribute: `anteil` (%), `betrag` (Originalwährung), `kurs`, `kurs_stand`, `kurs_quelle` (`EZB` oder `kurse.csv`) |
 | `sensor.finanzcockpit_summe_anlageklasse_<klasse>` | Summe je Anlageklasse in CHF, gemischte Konten anteilig. Attribut: `anteil` (%) |
 | Label `Topf: <topf>` | Wird automatisch erstellt und dem Sensor zugewiesen |
 
