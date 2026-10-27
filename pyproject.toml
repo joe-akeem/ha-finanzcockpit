@@ -6,6 +6,7 @@ requires-python = ">=3.13"
 
 [dependency-groups]
 dev = [
+    "home-assistant-frontend==20260128.6",
     "pytest-homeassistant-custom-component",
     "ruff",
 ]

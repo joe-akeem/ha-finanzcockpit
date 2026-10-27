@@ -2210,6 +2210,7 @@ source = { virtual = "." }
 
 [package.dev-dependencies]
 dev = [
+    { name = "home-assistant-frontend" },
     { name = "pytest-homeassistant-custom-component", version = "0.13.215", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.13.2'" },
     { name = "pytest-homeassistant-custom-component", version = "0.13.316", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.13.2' and python_full_version < '3.14.2'" },
     { name = "pytest-homeassistant-custom-component", version = "0.13.375", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.14.2'" },
@@ -2220,6 +2221,7 @@ dev = [
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "home-assistant-frontend", specifier = "==20260128.6" },
     { name = "pytest-homeassistant-custom-component" },
     { name = "ruff" },
 ]
@@ -2469,6 +2471,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/bc/6f/914fd8086f502748907751766e26e3f7fe5204347a679703ee9954e55e4d/home_assistant_bluetooth-2.0.0.tar.gz", hash = "sha256:3febd16b194812b156024d9bc8ce8ec7622cdd8d159047cac504cc77ca034ea1", size = 7604, upload-time = "2025-07-09T18:01:47.541Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/15/3e/2ed9e59da8fc26c43cbd9d6abbd27217138a31c608b1d334cc5e680e4069/home_assistant_bluetooth-2.0.0-py3-none-any.whl", hash = "sha256:8d7c2ac48c303adacad73cb6cdfe7710f2fccd2a367d4c3106acf301b0d22b91", size = 7907, upload-time = "2025-07-09T18:01:46.506Z" },
+]
+
+[[package]]
+name = "home-assistant-frontend"
+version = "20260128.6"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/2a/d259c14ed4d02e5babb277ddde6e579efe9132f5605df0aa7049ec1cb3a8/home_assistant_frontend-20260128.6.tar.gz", hash = "sha256:f1e901b059465e795eaf735281fe81e9a1b7eb2a0255c8c9db4f8cc466b95f9a", size = 110643922, upload-time = "2026-02-04T15:09:37.68Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9d/64/08c95c32215f533dedbc70c14fac2571620ad55ff53695a1d062c7b136ac/home_assistant_frontend-20260128.6-py3-none-any.whl", hash = "sha256:1fd307078b9584a7cfa3dce2e57443975223c9458a797af795253c3c4726ffbb", size = 110528860, upload-time = "2026-02-04T15:09:31.843Z" },
 ]
 
 [[package]]
