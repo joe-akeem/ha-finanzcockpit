@@ -29,3 +29,4 @@ simulation.yaml
 # Lokale HA-Instanz (scripts/develop) – nur die Konfiguration einchecken
 /config/*
 !/config/configuration.yaml
+/TODO.md
