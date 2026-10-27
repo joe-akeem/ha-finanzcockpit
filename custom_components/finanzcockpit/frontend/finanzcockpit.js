@@ -10,15 +10,16 @@ const SUMME = `sensor.${PLATTFORM}_summe_`;
 const SIM = `${PLATTFORM}_sim_`;
 const VERLAUF = `sensor.${SIM}verlauf`;
 
-// Farben wie im Logo, ergänzt für fünf Anlageklassen und drei Währungen
+// Farben wie im Logo, ergänzt für sechs Anlageklassen und vier Währungen
 const ANLAGEKLASSEN = [
   ["liquiditaet", "Liquidität", "#3BA7E0"],
   ["obligationen", "Obligationen", "#8E7CC3"],
   ["aktien", "Aktien", "#2FB67C"],
   ["immobilien", "Immobilien", "#E8A33D"],
   ["rohstoffe", "Rohstoffe", "#B5835A"],
+  ["krypto", "Krypto", "#F7931A"],
 ];
-const WAEHRUNGSFARBEN = { chf: "#D9534F", eur: "#3B6FE0", usd: "#2FB67C" };
+const WAEHRUNGSFARBEN = { chf: "#D9534F", eur: "#3B6FE0", usd: "#2FB67C", btc: "#F7931A" };
 const ERSATZFARBEN = ["#3BA7E0", "#2FB67C", "#E8A33D", "#8E7CC3", "#D9534F", "#B5835A"];
 
 // Tabelle aller Konten; Home Assistant rendert das Template serverseitig
@@ -28,7 +29,8 @@ const KONTENTABELLE = `| Konto | Topf | Saldo | in CHF |
 {%- set s = states[e] -%}
 {#- Nur Konto-Sensoren; Summen und Simulation haben keine konto_id -#}
 {%- if s and s.attributes.konto_id is defined -%}
-| {{ s.name }} | {{ s.attributes.topf }} | {{ '{:,.0f}'.format(s.state | float(0)) | replace(',', "'") }} {{ s.attributes.unit_of_measurement }} | {{ '{:,.0f}'.format(s.attributes.wert_chf or 0) | replace(',', "'") }} |
+{%- set format = '{:,.8f}' if s.attributes.unit_of_measurement == 'BTC' else '{:,.0f}' -%}
+| {{ s.name }} | {{ s.attributes.topf }} | {{ format.format(s.state | float(0)) | replace(',', "'") }} {{ s.attributes.unit_of_measurement }} | {{ '{:,.0f}'.format(s.attributes.wert_chf or 0) | replace(',', "'") }} |
 {% endif -%}
 {% endfor -%}
 | **Total** | | | **{{ '{:,.0f}'.format(states('sensor.${PLATTFORM}_summe_total') | float(0)) | replace(',', "'") }}** |`;

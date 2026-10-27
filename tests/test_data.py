@@ -83,6 +83,7 @@ konten:
         "CHF": Decimal(1000),
         "EUR": Decimal(900),
         "USD": Decimal(0),
+        "BTC": Decimal(0),
     }
     assert daten.summe_original("EUR") == Decimal(1000)
     assert daten.summe_nach_anlageklasse() == {
@@ -91,6 +92,7 @@ konten:
         "aktien": Decimal(540),
         "immobilien": Decimal(0),
         "rohstoffe": Decimal(0),
+        "krypto": Decimal(0),
     }
 
 

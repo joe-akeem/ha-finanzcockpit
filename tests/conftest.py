@@ -6,7 +6,7 @@ import shutil
 import pytest
 
 from custom_components.finanzcockpit.const import DATA_DIR
-from custom_components.finanzcockpit.kurse_online import KURSE_URL
+from custom_components.finanzcockpit.kurse_online import KRYPTO_URL, KURSE_URL
 
 EXAMPLES = Path(__file__).parent.parent / "examples"
 
@@ -19,6 +19,9 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 
 # Online-Kurse in den Tests; älter als die Kurse in examples/kurse.csv
 ONLINE_KURSE = {"EUR": 0.9239, "USD": 0.8286}
+BITCOIN = 66721
+# 2026-10-27 12:00 UTC
+BITCOIN_STAND = 1793102400
 
 
 def online_kurse_mocken(aioclient_mock, datum: str = "2026-10-27", **kurse: float) -> None:
@@ -30,6 +33,11 @@ def online_kurse_mocken(aioclient_mock, datum: str = "2026-10-27", **kurse: floa
             params={"base": waehrung, "symbols": "CHF"},
             json={"amount": 1.0, "base": waehrung, "date": datum, "rates": {"CHF": kurs}},
         )
+    aioclient_mock.get(
+        KRYPTO_URL,
+        params={"ids": "bitcoin", "vs_currencies": "chf", "include_last_updated_at": "true"},
+        json={"bitcoin": {"chf": BITCOIN, "last_updated_at": BITCOIN_STAND}},
+    )
 
 
 @pytest.fixture(autouse=True)

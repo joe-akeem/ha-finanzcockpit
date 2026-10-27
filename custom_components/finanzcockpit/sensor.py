@@ -58,6 +58,8 @@ class KontoSensor(CoordinatorEntity[FinanzcockpitCoordinator], SensorEntity):
         self._attr_unique_id = f"{DOMAIN}_{konto.id}"
         self._attr_name = konto.name
         self._attr_native_unit_of_measurement = konto.waehrung
+        if konto.waehrung == "BTC":
+            self._attr_suggested_display_precision = 8
 
     @property
     def _konto(self) -> Konto | None:

@@ -23,13 +23,14 @@ if TYPE_CHECKING:
     from .simulation import Simulation
 
 BASISWAEHRUNG = "CHF"
-WAEHRUNGEN = ["CHF", "EUR", "USD"]
+WAEHRUNGEN = ["CHF", "EUR", "USD", "BTC"]
 ANLAGEKLASSEN = {
     "liquiditaet": "Liquidität",
     "obligationen": "Obligationen",
     "aktien": "Aktien",
     "immobilien": "Immobilien",
     "rohstoffe": "Rohstoffe",
+    "krypto": "Krypto",
 }
 ID_PATTERN = re.compile(r"^[a-z0-9_]+$")
 # Konto-IDs mit diesen Präfixen würden mit den Summen- und Simulations-Sensoren kollidieren

@@ -28,7 +28,7 @@ konten:
     eigentuemer: Gemeinsam # optional, freier Text
     iban: CH93 0076 2011 6238 5295 7  # optional, Prüfziffer wird geprüft
     land: CH               # optional, Ländercode; ohne Angabe aus der IBAN
-    waehrung: CHF          # CHF, EUR oder USD
+    waehrung: CHF          # CHF, EUR, USD oder BTC
     topf: Frei verfügbar   # → Label «Topf: Frei verfügbar»
     anlageklasse: liquiditaet
     rhythmus: monatlich    # optional, nur zur Information
@@ -42,7 +42,7 @@ konten:
       liquiditaet: 10
 ```
 
-`anlageklasse` ist Pflicht. Erlaubt sind `liquiditaet`, `obligationen`, `aktien`, `immobilien` und `rohstoffe`. Bei Fonds oder Vorsorgelösungen die Aufteilung aus dem Factsheet übernehmen.
+`anlageklasse` ist Pflicht. Erlaubt sind `liquiditaet`, `obligationen`, `aktien`, `immobilien`, `rohstoffe` und `krypto`. Bei Fonds oder Vorsorgelösungen die Aufteilung aus dem Factsheet übernehmen.
 
 Ist sowohl `iban` als auch `land` angegeben, müssen die Länder übereinstimmen. Den Ländercode `NO` (Norwegen) in Anführungszeichen setzen, sonst liest YAML ihn als «nein».
 
@@ -61,7 +61,7 @@ datum;konto_id;betrag
 
 ### Wechselkurse: online und `kurse.csv` (optional)
 
-Für Konten in EUR oder USD holt das Finanzcockpit alle 6 Stunden die Referenzkurse der Europäischen Zentralbank (über die freie [Frankfurter-API](https://frankfurter.dev), ohne Konto und ohne Schlüssel). Abgefragt wird nur der Kurs der Währung gegen CHF. Der zuletzt geholte Kurs wird gespeichert und gilt weiter, wenn die Abfrage einmal nicht klappt.
+Für Konten in EUR oder USD holt das Finanzcockpit alle 6 Stunden die Referenzkurse der Europäischen Zentralbank (über die freie [Frankfurter-API](https://frankfurter.dev)), für Bitcoin den Kurs von [CoinGecko](https://www.coingecko.com). Beide brauchen kein Konto und keinen Schlüssel. Bitcoin-Beträge in `saldi.csv` dürfen bis zu 8 Nachkommastellen haben. Abgefragt wird nur der Kurs der Währung gegen CHF. Der zuletzt geholte Kurs wird gespeichert und gilt weiter, wenn die Abfrage einmal nicht klappt.
 
 `kurse.csv` ist nur noch nötig, wenn du eigene Kurse verwenden willst, zum Beispiel die Kursliste der ESTV per 31.12. `kurs` ist der Preis einer Einheit in CHF. Es gilt der neueste Kurs je Währung, egal woher. Am selben Tag hat die Datei Vorrang vor dem Online-Kurs. Woher ein Kurs stammt, zeigt das Attribut `kurs_quelle` der Währungs-Sensoren.
 
@@ -113,7 +113,7 @@ Mögliche Startwerte: `frei`, `saeule3a_er`, `saeule3a_sie`, `pk_er`, `pk_sie`, 
 |---|---|
 | `sensor.finanzcockpit_<id>` | Neuester Saldo in Originalwährung. Attribute: `topf`, `anlageklasse`, `wert_chf`, `institut`, `eigentuemer`, `land`, `iban`, `rhythmus`, `stand` (Datum) |
 | `sensor.finanzcockpit_summe_total` | Vermögen total in CHF |
-| `sensor.finanzcockpit_summe_waehrung_<chf\|eur\|usd>` | Summe je Währung in CHF. Attribute: `anteil` (%), `betrag` (Originalwährung), `kurs`, `kurs_stand`, `kurs_quelle` (`EZB` oder `kurse.csv`) |
+| `sensor.finanzcockpit_summe_waehrung_<chf\|eur\|usd\|btc>` | Summe je Währung in CHF. Attribute: `anteil` (%), `betrag` (Originalwährung), `kurs`, `kurs_stand`, `kurs_quelle` (`EZB`, `CoinGecko` oder `kurse.csv`) |
 | `sensor.finanzcockpit_summe_anlageklasse_<klasse>` | Summe je Anlageklasse in CHF, gemischte Konten anteilig. Attribut: `anteil` (%) |
 | Label `Topf: <topf>` | Wird automatisch erstellt und dem Sensor zugewiesen |
 

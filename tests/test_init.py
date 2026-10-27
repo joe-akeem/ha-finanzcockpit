@@ -75,9 +75,16 @@ async def test_summen(hass: HomeAssistant, daten_verzeichnis) -> None:
     assert aktien.name == "Anlageklasse Aktien"
     anteile = [
         hass.states.get(f"sensor.finanzcockpit_summe_anlageklasse_{k}").attributes["anteil"]
-        for k in ("liquiditaet", "obligationen", "aktien", "immobilien", "rohstoffe")
+        for k in ("liquiditaet", "obligationen", "aktien", "immobilien", "rohstoffe", "krypto")
     ]
     assert sum(anteile) == pytest.approx(100, abs=0.2)
+
+
+def vorlage_konten() -> str:
+    """Die Kontentabelle aus dem Frontend als Jinja-Template."""
+    js = (FRONTEND / "finanzcockpit.js").read_text(encoding="utf-8")
+    vorlage = re.search(r"const KONTENTABELLE = `(.*?)`;", js, re.DOTALL).group(1)
+    return vorlage.replace("${PLATTFORM}", DOMAIN)
 
 
 async def test_kontentabelle(hass: HomeAssistant, daten_verzeichnis) -> None:
@@ -87,11 +94,8 @@ async def test_kontentabelle(hass: HomeAssistant, daten_verzeichnis) -> None:
     er.async_get(hass).async_get_or_create(
         "sensor", DOMAIN, "geist", suggested_object_id="finanzcockpit_geist"
     )
-    js = (FRONTEND / "finanzcockpit.js").read_text(encoding="utf-8")
-    vorlage = re.search(r"const KONTENTABELLE = `(.*?)`;", js, re.DOTALL).group(1)
-    vorlage = vorlage.replace("${PLATTFORM}", DOMAIN)
 
-    tabelle = Template(vorlage, hass).async_render().strip().splitlines()
+    tabelle = Template(vorlage_konten(), hass).async_render().strip().splitlines()
 
     # Kopf, 8 Konten, Total; Summen- und Simulations-Entitäten sind keine Konten
     assert len(tabelle) == 2 + 8 + 1
@@ -156,7 +160,11 @@ async def test_ohne_kursdatei(
 
     eur = hass.states.get("sensor.finanzcockpit_summe_waehrung_eur")
     assert (eur.attributes["kurs"], eur.attributes["kurs_quelle"]) == (0.9239, "EZB")
-    assert hass_storage[KURSE_STORE_KEY]["data"]["EUR"] == {"datum": "2026-10-27", "kurs": "0.9239"}
+    assert hass_storage[KURSE_STORE_KEY]["data"]["EUR"] == {
+        "datum": "2026-10-27",
+        "kurs": "0.9239",
+        "quelle": "EZB",
+    }
 
 
 async def test_offline_mit_gespeicherten_kursen(
@@ -192,3 +200,27 @@ async def test_kurse_nur_alle_paar_stunden(
     freezer.tick(KURSE_INTERVALL + timedelta(minutes=1))
     await entry.runtime_data.async_refresh()
     assert online_kurse.call_count == 4
+
+
+async def test_bitcoin(hass: HomeAssistant, daten_verzeichnis, online_kurse) -> None:
+    with (daten_verzeichnis / "konten.yaml").open("a", encoding="utf-8") as datei:
+        datei.write(
+            "  - id: wallet\n    name: Wallet\n    waehrung: BTC\n"
+            "    topf: Vermögensaufbau\n    anlageklasse: krypto\n"
+        )
+    with (daten_verzeichnis / "saldi.csv").open("a", encoding="utf-8") as datei:
+        datei.write("2026-10-31;wallet;0.12345678\n")
+
+    await richte_ein(hass)
+
+    wallet = hass.states.get("sensor.finanzcockpit_wallet")
+    assert wallet.attributes["unit_of_measurement"] == "BTC"
+    assert wallet.attributes["wert_chf"] == round(0.12345678 * 66721, 2)
+    btc = hass.states.get("sensor.finanzcockpit_summe_waehrung_btc")
+    assert (btc.attributes["kurs"], btc.attributes["kurs_quelle"]) == (66721.0, "CoinGecko")
+    assert btc.attributes["kurs_stand"] == "2026-10-27"
+    krypto = hass.states.get("sensor.finanzcockpit_summe_anlageklasse_krypto")
+    assert float(krypto.state) == wallet.attributes["wert_chf"]
+
+    tabelle = Template(vorlage_konten(), hass).async_render()
+    assert "| Wallet | Vermögensaufbau | 0.12345678 BTC | 8'237 |" in tabelle

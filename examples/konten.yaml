@@ -2,9 +2,9 @@
 # und nie in dieses Repository.
 #
 # id:        kurz, stabil, nur a-z, 0-9 und _ (wird Teil der Entity-ID)
-# waehrung:  CHF, EUR oder USD
+# waehrung:  CHF, EUR, USD oder BTC
 # topf:      wird als Label «Topf: <topf>» zugewiesen
-# anlageklasse: liquiditaet, obligationen, aktien, immobilien oder rohstoffe,
+# anlageklasse: liquiditaet, obligationen, aktien, immobilien, rohstoffe oder krypto,
 #            bei gemischten Konten eine Aufteilung in Prozent (Summe 100)
 # optional:  institut, eigentuemer, iban, land, rhythmus
 #            iban wird auf die Prüfziffer geprüft, Leerzeichen sind erlaubt
