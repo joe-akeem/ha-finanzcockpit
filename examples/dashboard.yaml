@@ -1,0 +1,23 @@
+# Das Finanzcockpit bringt sein Dashboard selbst mit. Es gibt zwei Wege:
+#
+# 1. Automatisch: Option «Dashboard in der Seitenleiste anzeigen» beim Einrichten
+#    oder später unter Einstellungen → Geräte & Dienste → Finanzcockpit → ⚙.
+#
+# 2. Eigenes, bearbeitbares Dashboard: Einstellungen → Dashboards → Dashboard
+#    hinzufügen → «Neu beginnen», dann ✎ → ⋮ → Raw-Konfigurationseditor und
+#    die folgende Zeile einfügen. Das Dashboard baut sich aus den Sensoren auf.
+#    Mit ✎ → «Kontrolle übernehmen» lässt es sich danach frei anpassen.
+strategy:
+  type: custom:finanzcockpit
+
+# Die Kuchendiagramme gibt es auch als einzelne Karte für eigene Dashboards:
+#
+# type: custom:finanzcockpit-donut-card
+# title: Anlageklassen
+# entities:
+#   - entity: sensor.finanzcockpit_summe_anlageklasse_liquiditaet
+#     name: Liquidität
+#     color: "#3BA7E0"
+#   - entity: sensor.finanzcockpit_summe_anlageklasse_aktien
+#     name: Aktien
+#     color: "#2FB67C"

@@ -1,0 +1,20 @@
+{
+  "domain": "finanzcockpit",
+  "name": "Finanzcockpit",
+  "codeowners": [
+    "@joe-akeem"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "frontend",
+    "http",
+    "lovelace"
+  ],
+  "documentation": "https://github.com/joe-akeem/ha-finanzcockpit",
+  "integration_type": "service",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/joe-akeem/ha-finanzcockpit/issues",
+  "requirements": [],
+  "single_config_entry": true,
+  "version": "0.1.0"
+}

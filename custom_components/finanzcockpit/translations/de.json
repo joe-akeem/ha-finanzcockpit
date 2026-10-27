@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Finanzcockpit einrichten",
+        "description": "Das Finanzcockpit liest die Dateien konten.yaml, saldi.csv, (bei Fremdwährungen) kurse.csv und (optional) simulation.yaml aus dem Verzeichnis {pfad}. Lege sie dort an und klicke dann auf «Senden».",
+        "data": {
+          "dashboard": "Dashboard «Finanzen» in der Seitenleiste anzeigen"
+        },
+        "data_description": {
+          "dashboard": "Zeigt Vermögen, Währungen, Anlageklassen, Konten und (mit simulation.yaml) die Vorsorge-Simulation. Das Dashboard passt sich neuen Konten automatisch an."
+        }
+      }
+    },
+    "error": {
+      "ungueltige_daten": "Die Dateien fehlen oder enthalten Fehler:\n{fehler}"
+    },
+    "abort": {
+      "already_configured": "Das Finanzcockpit ist bereits eingerichtet.",
+      "single_instance_allowed": "Das Finanzcockpit ist bereits eingerichtet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Finanzcockpit-Optionen",
+        "data": {
+          "dashboard": "Dashboard «Finanzen» in der Seitenleiste anzeigen"
+        },
+        "data_description": {
+          "dashboard": "Zeigt Vermögen, Währungen, Anlageklassen, Konten und (mit simulation.yaml) die Vorsorge-Simulation. Das Dashboard passt sich neuen Konten automatisch an."
+        }
+      }
+    }
+  },
+  "services": {
+    "reload": {
+      "name": "Dateien neu einlesen",
+      "description": "Liest konten.yaml, saldi.csv, kurse.csv und simulation.yaml neu ein und legt Sensoren für neue Konten an."
+    }
+  }
+}

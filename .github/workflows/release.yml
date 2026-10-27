@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Tag v1.2.3 → Version 1.2.3 im Manifest der ZIP-Datei
+      - name: Version setzen
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          jq --arg v "$version" '.version = $v' custom_components/finanzcockpit/manifest.json > manifest.tmp
+          mv manifest.tmp custom_components/finanzcockpit/manifest.json
+
+      - name: ZIP erstellen
+        working-directory: custom_components/finanzcockpit
+        run: zip -r "${{ github.workspace }}/finanzcockpit.zip" . -x '__pycache__/*'
+
+      - name: ZIP an Release anhängen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: finanzcockpit.zip

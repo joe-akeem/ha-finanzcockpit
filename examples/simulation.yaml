@@ -1,0 +1,138 @@
+# Beispiel mit Fantasiewerten für die Vorsorge-Simulation.
+# Echte Daten gehören nach /config/finanzcockpit/ und nie in dieses Repository.
+#
+# Prozentwerte als Prozent (3.5 = 3.5 %), Beträge in CHF pro Jahr,
+# sofern nicht anders vermerkt. Fehlende optionale Werte haben Standardwerte
+# (siehe README).
+
+personen:
+  er:
+    geburtsjahr: 1972
+    lohn: 120000              # brutto bei 100 %
+    planungsalter: 90         # danach rechnet das Modell mit Witwenleistungen
+  sie:
+    geburtsjahr: 1983
+    lohn: 90000
+
+wirtschaft:
+  lohnwachstum: 1.0
+  teuerung: 1.0
+  sozialabzuege: 13           # AHV/ALV/NBU/KTG und PK-Beitrag
+  # kurs_eur: 0.93            # ohne Angabe gilt der neueste Kurs aus kurse.csv
+
+anlagen:
+  liquiditaetsreserve: 30000  # zum Liquiditätszins, der Rest zur Anlagerendite
+  zins_liquiditaet: 0.5
+  rendite_frei: 3.0
+  zins_negativ: 4.0
+  rendite_3a: 3.0
+
+lebenshaltung:                # pro Jahr, heutige Preise, ohne Steuern/Hypozins/3a
+  heute: 66000
+  kinder_selbstaendig: 58000
+  ruhestand: 60000
+  kinder_selbstaendig_ab: 2040
+  faktor_nach_tod: 75         # % der Ausgaben als Witwe
+
+ahv:                          # gemäss Rentenvorausberechnung, CHF pro Monat
+  rente_er: 2100
+  rente_sie: 1600
+  beitrag_nichterwerbstaetige: 1500
+
+pk:
+  verzinsung: 1.5
+  witwenrente: 60             # % der Altersrente Er
+  er:
+    prognose_kapital: 380000  # gemäss Vorsorgeausweis
+    prognose_jahr: 2037
+    umwandlungssatz: 5.6      # mit 65
+    reduktion_pro_jahr: 0.2   # Prozentpunkte pro Jahr Vorbezug
+    einkaufspotenzial: 250000
+  sie:
+    prognose_kapital: 210000
+    prognose_jahr: 2048
+    prognose_pensum: 40       # Pensum, mit dem der Ausweis rechnet
+    umwandlungssatz: 5.0
+    reduktion_pro_jahr: 0.12
+    einkaufspotenzial: 60000
+
+immobilie:
+  wertsteigerung: 1.0
+  hypozins:                   # Phasen, «bis» einschliesslich
+    - bis: 2029
+      satz: 1.6
+    - satz: 2.0
+  eigenmietwert: 18000
+  eigenmietwert_abgeschafft_ab: 2029
+
+steuern:                      # vereinfachtes lineares Modell, auf heute kalibriert
+  grenzsatz_kanton: 14
+  grenzsatz_bund: 4
+  steuern_heute: 16000
+  einkommen_heute: 115000
+  abzuege: 20000
+  abzuege_faktor_spaeter: 40
+  vermoegen: 0.2
+  kapitalbezug: 6
+
+ausgaben:
+  auto:
+    naechster: 2028
+    alle: 8
+    preis: 35000
+    letzter: 2060
+  dach:
+    jahr: 2035
+    kosten: 40000
+
+startwerte:                   # aus den neuesten Saldi, per Konto-ID oder Topf
+  frei:
+    toepfe: [Frei verfügbar, Notgroschen, Vermögensaufbau]
+  zweckgebunden: 5000         # z.B. bereits verplante Steuerrücklagen
+  saeule3a_er:
+    konten: [saeule3a_er]
+  pk_er:
+    konten: [pk_er]           # ein Saldo per 1.1. gilt als Stand Ende Vorjahr
+  pk_sie:
+    wert: 48000               # ohne Konto: fester Betrag
+    jahr: 2025
+  liegenschaft:
+    konten: [liegenschaft]
+  hypothek:
+    konten: [hypothek]
+
+szenarien:
+  - id: status_quo
+    name: Status quo
+    pension:                  # erstes Jahr ohne Erwerb
+      er: 2037
+      sie: 2048
+    pensum:
+      er:
+        - {ab: 2026, wert: 100}
+      sie:
+        - {ab: 2026, wert: 40}
+    amortisation:
+      bis_pension: 5000
+
+  - id: teilzeit
+    name: Er 80 % ab 2030, Sie 60 % ab 2028
+    pension:
+      er: 2037
+      sie: 2045
+    pensum:
+      er:
+        - {ab: 2026, wert: 100}
+        - {ab: 2030, wert: 80}
+      sie:
+        - {ab: 2026, wert: 40}
+        - {ab: 2028, wert: 60}
+    pk_kapitalbezug:
+      sie: 100
+    pk_einkauf:
+      er: {betrag: 20000, von: 2028, bis: 2033}
+    amortisation:
+      bis_pension: 5000
+      bei_pension_er: 80000
+
+aktives_szenario: teilzeit

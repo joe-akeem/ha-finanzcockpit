@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Set up Finanzcockpit",
+        "description": "Finanzcockpit reads konten.yaml, saldi.csv, kurse.csv (for foreign currencies) and simulation.yaml (optional) from {pfad}. Create the files there, then click Submit.",
+        "data": {
+          "dashboard": "Show the «Finanzen» dashboard in the sidebar"
+        },
+        "data_description": {
+          "dashboard": "Shows net worth, currencies, asset classes, accounts and (with simulation.yaml) the retirement simulation. The dashboard adapts to new accounts automatically."
+        }
+      }
+    },
+    "error": {
+      "ungueltige_daten": "The files are missing or contain errors:\n{fehler}"
+    },
+    "abort": {
+      "already_configured": "Finanzcockpit is already configured.",
+      "single_instance_allowed": "Finanzcockpit is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Finanzcockpit options",
+        "data": {
+          "dashboard": "Show the «Finanzen» dashboard in the sidebar"
+        },
+        "data_description": {
+          "dashboard": "Shows net worth, currencies, asset classes, accounts and (with simulation.yaml) the retirement simulation. The dashboard adapts to new accounts automatically."
+        }
+      }
+    }
+  },
+  "services": {
+    "reload": {
+      "name": "Reload data files",
+      "description": "Re-reads konten.yaml, saldi.csv, kurse.csv and simulation.yaml and creates sensors for new accounts."
+    }
+  }
+}

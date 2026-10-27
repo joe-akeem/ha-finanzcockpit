@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# Erzeugt die PNG-Dateien für home-assistant/brands aus den SVG-Quellen in brand/.
+# Benötigt rsvg-convert und ImageMagick (brew install librsvg imagemagick).
+set -e
+
+cd "$(dirname "$0")/../brand"
+mkdir -p png
+
+for name in icon dark_icon; do
+  rsvg-convert -w 2048 -h 2048 "$name.svg" -o /tmp/fc_$name.png
+  # Zuschneiden und wieder quadratisch machen (Vorgabe: 1:1, ohne unnötigen Rand)
+  for size in 256 512; do
+    suffix=$([[ $size == 512 ]] && echo "@2x" || echo "")
+    magick /tmp/fc_$name.png -trim +repage -background none -gravity center \
+      -extent "%[fx:max(w,h)]x%[fx:max(w,h)]" -resize ${size}x${size} -strip \
+      "png/$name$suffix.png"
+  done
+done
+
+for name in logo dark_logo; do
+  rsvg-convert -h 1024 "$name.svg" -o /tmp/fc_$name.png
+  # Zuschneiden, kürzere Seite 128 bzw. 256 px
+  magick /tmp/fc_$name.png -trim +repage -resize x128 -strip "png/$name.png"
+  magick /tmp/fc_$name.png -trim +repage -resize x256 -strip "png/$name@2x.png"
+done
+
+rm -f /tmp/fc_*.png
+ls -1 png

@@ -1,0 +1,17 @@
+# Lokale Entwicklungsinstanz (scripts/develop). Nicht für den Betrieb gedacht.
+homeassistant:
+  name: Finanzcockpit Dev
+  country: CH
+  currency: CHF
+  time_zone: Europe/Zurich
+  unit_system: metric
+
+frontend:
+history:
+logbook:
+recorder:
+
+logger:
+  default: info
+  logs:
+    custom_components.finanzcockpit: debug

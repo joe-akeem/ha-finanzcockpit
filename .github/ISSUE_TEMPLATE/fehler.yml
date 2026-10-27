@@ -1,0 +1,33 @@
+name: Fehler melden
+description: Etwas funktioniert nicht wie erwartet
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Bitte **keine echten Finanzdaten** (Saldi, Kontonamen, IBANs) posten – nur anonymisierte Beispiele.
+  - type: textarea
+    id: beschreibung
+    attributes:
+      label: Was ist passiert?
+      description: Was hast du erwartet, was ist stattdessen passiert?
+    validations:
+      required: true
+  - type: textarea
+    id: schritte
+    attributes:
+      label: Wie lässt sich der Fehler nachstellen?
+      description: Am besten mit einer gekürzten, anonymisierten konten.yaml/saldi.csv.
+  - type: input
+    id: versionen
+    attributes:
+      label: Versionen
+      placeholder: Home Assistant 2026.2.3, Finanzcockpit 0.1.0
+    validations:
+      required: true
+  - type: textarea
+    id: log
+    attributes:
+      label: Log-Auszug
+      description: Einstellungen → System → Protokolle, gefiltert nach «finanzcockpit».
+      render: text

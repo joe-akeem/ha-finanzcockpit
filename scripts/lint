@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+# Formatiert den Code und behebt, was Ruff automatisch beheben kann.
+set -e
+
+cd "$(dirname "$0")/.."
+
+uv run ruff format .
+uv run ruff check . --fix

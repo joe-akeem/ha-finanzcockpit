@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Startet eine lokale Home-Assistant-Instanz mit dem Finanzcockpit
+# unter http://localhost:8123 (Konfiguration in ./config).
+set -e
+
+cd "$(dirname "$0")/.."
+
+# Integration per Symlink einbinden, damit Änderungen sofort wirken
+mkdir -p config/custom_components
+ln -sfn ../../custom_components/finanzcockpit config/custom_components/finanzcockpit
+
+# Fehlende Datendateien aus den Beispielen kopieren, vorhandene bleiben unverändert
+mkdir -p config/finanzcockpit
+for datei in konten.yaml saldi.csv kurse.csv simulation.yaml; do
+  [[ -e config/finanzcockpit/$datei ]] || cp "examples/$datei" config/finanzcockpit/
+done
+
+# Pakete nachinstallieren, die HA importiert, bevor es sie selbst installiert
+uv run python scripts/dev_requirements.py | xargs uv pip install --quiet
+
+# Auf Apple Silicon native Homebrew-Bibliotheken (z.B. libturbojpeg) vor
+# allfälligen Intel-Resten in /usr/local/lib finden
+if [[ -d /opt/homebrew/lib ]]; then
+  export DYLD_FALLBACK_LIBRARY_PATH="/opt/homebrew/lib:${HOME}/lib:/usr/local/lib:/usr/lib"
+fi
+
+exec uv run hass --config "${PWD}/config" --debug "$@"

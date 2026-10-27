@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 860 256" width="860" height="256">
+<g>
+<g fill="none" stroke-width="34" stroke-linecap="butt">
+  <path d="M37.79,192.33 A96,96 0 0 1 66.29,85.96" stroke="#E8A33D"/>
+  <path d="M72.94,80.86 A96,96 0 0 1 183.06,80.86" stroke="#3BA7E0"/>
+  <path d="M189.71,85.96 A96,96 0 0 1 218.21,192.33" stroke="#2FB67C"/>
+</g>
+<polygon points="191.04,110.25 122.46,152.41 133.54,166.59" fill="#33475B" stroke="#33475B" stroke-width="4" stroke-linejoin="round"/>
+<circle cx="128" cy="159.5" r="21" fill="#33475B"/>
+<circle cx="128" cy="159.5" r="13" fill="none" stroke="#E8A33D" stroke-width="3"/>
+</g>
+<text x="262" y="160" font-family="Helvetica Neue, Helvetica, Arial, sans-serif" font-size="84" font-weight="600" letter-spacing="-1" fill="#33475B">Finanz<tspan font-weight="300">cockpit</tspan></text>
+</svg>

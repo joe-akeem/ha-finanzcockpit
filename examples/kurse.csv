@@ -1,0 +1,7 @@
+# Beispiel mit Fantasiewerten. kurs = CHF für eine Einheit der Währung.
+# Nur für Fremdwährungen nötig; es gilt jeweils der neueste Kurs.
+datum;waehrung;kurs
+2026-09-30;EUR;0.9350
+2026-09-30;USD;0.8010
+2026-10-31;EUR;0.9320
+2026-10-31;USD;0.7980

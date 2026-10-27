@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# IntelliJ / PyCharm
+.idea/
+*.iml
+
+# macOS
+.DS_Store
+
+# Echte Finanzdaten nie einchecken – nur die Beispiele und Testdaten
+konten.yaml
+saldi.csv
+plan.yaml
+kurse.csv
+simulation.yaml
+!examples/konten.yaml
+!examples/saldi.csv
+!examples/plan.yaml
+!examples/kurse.csv
+!examples/simulation.yaml
+
+# Lokale HA-Instanz (scripts/develop) – nur die Konfiguration einchecken
+/config/*
+!/config/configuration.yaml

@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+# Richtet die Entwicklungsumgebung ein (.venv mit Home Assistant, Tests, Ruff).
+set -e
+
+cd "$(dirname "$0")/.."
+
+uv sync --python 3.13

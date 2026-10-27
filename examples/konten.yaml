@@ -1,0 +1,103 @@
+# Beispiel mit Fantasiewerten. Echte Daten gehören nach /config/finanzcockpit/
+# und nie in dieses Repository.
+#
+# id:        kurz, stabil, nur a-z, 0-9 und _ (wird Teil der Entity-ID)
+# waehrung:  CHF, EUR oder USD
+# topf:      wird als Label «Topf: <topf>» zugewiesen
+# anlageklasse: liquiditaet, obligationen, aktien, immobilien oder rohstoffe,
+#            bei gemischten Konten eine Aufteilung in Prozent (Summe 100)
+# optional:  institut, eigentuemer, iban, land, rhythmus
+#            iban wird auf die Prüfziffer geprüft, Leerzeichen sind erlaubt
+#            land ist der Ländercode (CH, DE …) und wird sonst aus der IBAN übernommen
+konten:
+  - id: lohnkonto
+    name: Lohnkonto
+    institut: Beispielbank
+    eigentuemer: Gemeinsam
+    iban: CH93 0076 2011 6238 5295 7
+    land: CH
+    waehrung: CHF
+    topf: Frei verfügbar
+    anlageklasse: liquiditaet
+    rhythmus: monatlich
+
+  - id: steuern
+    name: Steuerkonto
+    institut: Beispielbank
+    eigentuemer: Gemeinsam
+    iban: CH66 0076 2011 6238 5295 8
+    land: CH
+    waehrung: CHF
+    topf: Steuern
+    anlageklasse: liquiditaet
+    rhythmus: monatlich
+
+  - id: festgeld_eur
+    name: Festgeld EUR
+    institut: Musterbank DE
+    eigentuemer: Er
+    iban: DE89 3704 0044 0532 0130 00
+    land: DE
+    waehrung: EUR
+    topf: Notgroschen
+    anlageklasse: liquiditaet
+    rhythmus: jährlich
+
+  - id: saeule3a_er
+    name: Säule 3a (er)
+    institut: Beispiel-Vorsorge
+    eigentuemer: Er
+    land: CH
+    waehrung: CHF
+    topf: Altersvorsorge
+    anlageklasse:
+      aktien: 45
+      obligationen: 30
+      immobilien: 15
+      liquiditaet: 10
+    rhythmus: quartalsweise
+
+  - id: depot_usd
+    name: Depot USD
+    institut: Beispiel-Broker
+    eigentuemer: Sie
+    land: CH
+    waehrung: USD
+    topf: Vermögensaufbau
+    anlageklasse:
+      aktien: 85
+      rohstoffe: 15
+    rhythmus: monatlich
+
+  - id: pk_er
+    name: Pensionskasse (er)
+    institut: Beispiel-Pensionskasse
+    eigentuemer: Er
+    land: CH
+    waehrung: CHF
+    topf: Altersvorsorge
+    anlageklasse:          # Anlagestrategie gemäss Geschäftsbericht der PK
+      obligationen: 40
+      aktien: 30
+      immobilien: 20
+      liquiditaet: 10
+    rhythmus: jährlich     # Saldo aus dem Vorsorgeausweis
+
+  - id: liegenschaft
+    name: Liegenschaft
+    eigentuemer: Gemeinsam
+    land: CH
+    waehrung: CHF
+    topf: Wohnen
+    anlageklasse: immobilien
+    rhythmus: jährlich
+
+  - id: hypothek
+    name: Hypothek
+    institut: Beispielbank
+    eigentuemer: Gemeinsam
+    land: CH
+    waehrung: CHF
+    topf: Wohnen
+    anlageklasse: immobilien  # Schulden als negativer Saldo
+    rhythmus: bei Änderung
