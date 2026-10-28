@@ -156,7 +156,7 @@ Das Finanzcockpit bringt ein eigenes Dashboard und eine Kuchendiagramm-Karte mit
 
   Mit ✎ → «Kontrolle übernehmen» wird daraus ein frei bearbeitbares Dashboard.
 
-Beide zeigen das Total, Kuchendiagramme nach Währungen und Anlageklassen und eine Tabelle aller Konten. Neue Konten und Währungen erscheinen ohne Anpassung. Mit `simulation.yaml` kommt die Ansicht «Vorsorge» dazu: Szenario-Auswahl und Regler, Kennzahlen mit Warnungen, Verlauf von Vermögen, Hypothek, Renten und Ausgaben sowie ein Vergleich aller Szenarien.
+Beide zeigen das Total, Kuchendiagramme nach Währungen, Anlageklassen und Töpfen, Balken je Institut mit der Grenze der Einlagensicherung und eine Tabelle aller Konten. Neue Konten und Währungen erscheinen ohne Anpassung. Mit `simulation.yaml` kommt die Ansicht «Vorsorge» dazu: Szenario-Auswahl und Regler, Kennzahlen mit Warnungen, Verlauf von Vermögen, Hypothek, Renten und Ausgaben sowie ein Vergleich aller Szenarien.
 
 Nach der Installation oder einem Update die Seite im Browser einmal vollständig neu laden (Cmd+Shift+R bzw. Ctrl+Shift+R). Sonst meldet das Dashboard «Timeout waiting for strategy element», weil der Browser die Karte noch nicht geladen hat.
 
@@ -172,6 +172,19 @@ entities:
     name: Liquidität       # optional
     color: "#3BA7E0"       # optional
   - sensor.finanzcockpit_summe_anlageklasse_aktien
+```
+
+Statt `entities` gruppiert `gruppieren` die Konten nach einem Attribut und zeigt den Saldo in CHF netto je Gruppe, z.B. `gruppieren: topf`. Gruppen mit negativem Saldo (z.B. ein Darlehen) fallen weg.
+
+### Karte `finanzcockpit-balken-card`
+
+Zeigt die Guthaben je Institut als Balken, aufgeteilt in Liquidität und übrige Anlagen. Schulden zählen nicht. Die gestrichelte rote Linie markiert die `grenze`, z.B. die Einlagensicherung von 100'000 CHF pro Bank. Übersteigt die Liquidität bei einem Institut die Grenze, wird der Betrag rot.
+
+```yaml
+type: custom:finanzcockpit-balken-card
+title: Guthaben je Institut
+gruppieren: institut       # optional, Standard: institut
+grenze: 100000             # optional
 ```
 
 ### Karte `finanzcockpit-verlauf-card`

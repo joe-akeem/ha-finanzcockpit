@@ -1,6 +1,8 @@
 // Frontend des Finanzcockpits. Wird von der Integration automatisch geladen.
 //
 // - finanzcockpit-donut-card: Kuchendiagramm (Donut) für beliebige Sensoren
+//   oder für die Konten, gruppiert nach Topf, Institut usw.
+// - finanzcockpit-balken-card: Balken je Institut mit Grenzlinie (Einlagensicherung)
 // - finanzcockpit-verlauf-card: Liniendiagramm der Vorsorge-Simulation
 // - Dashboard-Strategie «custom:finanzcockpit»: baut das Dashboard aus den
 //   vorhandenen Sensoren zusammen, neue Konten erscheinen ohne Anpassung
@@ -106,6 +108,29 @@ const WARNUNGEN = `{%- set w = state_attr('${VERLAUF}', 'warnungen') -%}
 
 *Regler weichen vom Szenario ab.*{% endif %}`;
 
+// Fortlaufende, gut unterscheidbare Farben für beliebig viele Gruppen
+const gruppenfarbe = (i) => `hsl(${Math.round((200 + i * 137.508) % 360)} 55% 52%)`;
+
+// Summiert die Konto-Sensoren in CHF nach einem Attribut (topf, institut, …).
+// nurGuthaben: Schulden weglassen. Liefert je Gruppe Total und Anteil Liquidität,
+// absteigend sortiert; Konten ohne Wert für das Attribut fallen weg.
+export function gruppiereKonten(hass, merkmal, { nurGuthaben = false } = {}) {
+  const gruppen = new Map();
+  for (const [id, state] of Object.entries(hass.states)) {
+    const a = state.attributes ?? {};
+    if (!id.startsWith(`sensor.${PLATTFORM}_`) || a.konto_id === undefined) continue;
+    const name = a[merkmal];
+    const wert = Number(a.wert_chf);
+    if (!name || !Number.isFinite(wert) || (nurGuthaben && wert <= 0)) continue;
+    const gruppe = gruppen.get(name) ?? { name, wert: 0, liquiditaet: 0, konten: [] };
+    gruppe.wert += wert;
+    gruppe.liquiditaet += (wert * (a.anlageklasse?.["Liquidität"] ?? 0)) / 100;
+    gruppe.konten.push(a.friendly_name ?? id);
+    gruppen.set(name, gruppe);
+  }
+  return [...gruppen.values()].sort((a, b) => b.wert - a.wert || a.name.localeCompare(b.name));
+}
+
 const escape = (text) =>
   String(text).replace(
     /[&<>"']/g,
@@ -121,13 +146,19 @@ class FinanzcockpitDonutCard extends HTMLElement {
   }
 
   setConfig(config) {
-    if (!Array.isArray(config.entities) || config.entities.length === 0) {
-      throw new Error("'entities' muss eine Liste von Sensoren sein");
+    if (config.gruppieren !== undefined) {
+      if (typeof config.gruppieren !== "string" || !config.gruppieren) {
+        throw new Error("'gruppieren' muss ein Konto-Attribut sein, z.B. topf");
+      }
+      this._config = { ...config };
+    } else if (!Array.isArray(config.entities) || config.entities.length === 0) {
+      throw new Error("'entities' muss eine Liste von Sensoren sein oder 'gruppieren' gesetzt");
+    } else {
+      this._config = {
+        ...config,
+        entities: config.entities.map((e) => (typeof e === "string" ? { entity: e } : e)),
+      };
     }
-    this._config = {
-      ...config,
-      entities: config.entities.map((e) => (typeof e === "string" ? { entity: e } : e)),
-    };
     this._signatur = undefined;
     this._render();
   }
@@ -141,11 +172,18 @@ class FinanzcockpitDonutCard extends HTMLElement {
     return 5;
   }
 
+  // Volle Breite, damit die Legende auch auf dem Telefon lesbar bleibt
   getGridOptions() {
-    return { columns: 6, min_columns: 4, rows: "auto" };
+    return { columns: 12, min_columns: 6, rows: "auto" };
   }
 
   _segmente() {
+    if (this._config.gruppieren) {
+      // Netto je Gruppe; Gruppen mit überwiegend Schulden fallen weg
+      return gruppiereKonten(this._hass, this._config.gruppieren)
+        .filter((g) => g.wert > 0)
+        .map((g, i) => ({ name: g.name, farbe: gruppenfarbe(i), wert: g.wert, einheit: "CHF" }));
+    }
     return this._config.entities
       .map((e, i) => {
         const state = this._hass.states[e.entity];
@@ -163,8 +201,12 @@ class FinanzcockpitDonutCard extends HTMLElement {
   _render() {
     if (!this._config || !this._hass) return;
     const segmente = this._segmente();
+    // Negative Gruppen (z.B. ein Darlehen) passen nicht in den Donut, werden aber genannt
+    const negativ = this._config.gruppieren
+      ? gruppiereKonten(this._hass, this._config.gruppieren).filter((g) => g.wert < 0)
+      : [];
     // Nur neu zeichnen, wenn sich die angezeigten Werte geändert haben
-    const signatur = JSON.stringify([segmente, this._hass.locale?.language]);
+    const signatur = JSON.stringify([segmente, negativ, this._hass.locale?.language]);
     if (signatur === this._signatur) return;
     this._signatur = signatur;
 
@@ -174,6 +216,8 @@ class FinanzcockpitDonutCard extends HTMLElement {
     const total = segmente.reduce((summe, s) => summe + s.wert, 0);
     const einheit = segmente[0]?.einheit ?? "";
 
+    // Gruppen haben keinen Sensor zum Öffnen
+    const klick = (s) => (s.entity ? `data-entity="${escape(s.entity)}"` : "");
     // Kreisumfang 100, damit sich die Anteile direkt als Strichlänge eignen
     const radius = 100 / (2 * Math.PI);
     const luecke = segmente.length > 1 ? 0.6 : 0;
@@ -182,7 +226,7 @@ class FinanzcockpitDonutCard extends HTMLElement {
       .map((s) => {
         const anteil = (s.wert / total) * 100;
         const laenge = Math.max(anteil - luecke, 0.1);
-        const bogen = `<circle class="bogen" data-entity="${escape(s.entity)}"
+        const bogen = `<circle class="bogen" ${klick(s)}
           r="${radius}" cx="21" cy="21" stroke="${escape(s.farbe)}"
           stroke-dasharray="${laenge} ${100 - laenge}" stroke-dashoffset="${25 - start}">
           <title>${escape(s.name)}: ${zahl.format(s.wert)} ${escape(s.einheit)}</title></circle>`;
@@ -193,7 +237,7 @@ class FinanzcockpitDonutCard extends HTMLElement {
 
     const legende = segmente
       .map(
-        (s) => `<li data-entity="${escape(s.entity)}">
+        (s) => `<li ${klick(s)}>
           <span class="punkt" style="background:${escape(s.farbe)}"></span>
           <span class="name">${escape(s.name)}</span>
           <span class="wert">${zahl.format(s.wert)} ${escape(s.einheit)}</span>
@@ -204,7 +248,7 @@ class FinanzcockpitDonutCard extends HTMLElement {
 
     const titel = this._config.title ? `<h1 class="titel">${escape(this._config.title)}</h1>` : "";
     const inhalt = segmente.length
-      ? `<div class="diagramm">
+      ? `<div class="inhalt"><div class="diagramm">
           <svg viewBox="0 0 42 42" role="img" aria-label="${escape(this._config.title ?? "")}">
             <circle class="ring" r="${radius}" cx="21" cy="21"></circle>
             ${boegen}
@@ -212,31 +256,45 @@ class FinanzcockpitDonutCard extends HTMLElement {
             <text x="21" y="25" class="einheit">${escape(einheit)}</text>
           </svg>
         </div>
-        <ul class="legende">${legende}</ul>`
+        <ul class="legende">${legende}</ul>${
+          negativ.length
+            ? `<p class="hinweis">Nicht enthalten: ${negativ
+                .map((g) => `${escape(g.name)} ${zahl.format(g.wert)}`)
+                .join(", ")} ${escape(einheit)}</p>`
+            : ""
+        }</div>`
       : `<p class="leer">Keine Werte vorhanden</p>`;
 
     if (!this.shadowRoot) this.attachShadow({ mode: "open" });
     this.shadowRoot.innerHTML = `
       <style>
-        ha-card { padding: 16px; height: 100%; box-sizing: border-box; }
+        ha-card { padding: 16px; height: 100%; box-sizing: border-box; container-type: inline-size; }
         .titel { margin: 0 0 12px; font-size: 16px; font-weight: 500; color: var(--primary-text-color); }
         .diagramm { max-width: 220px; margin: 0 auto; }
+        /* Breite Karte: Donut links, Legende rechts */
+        @container (min-width: 520px) {
+          .inhalt { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 0 24px; align-items: center; }
+          .inhalt .legende { margin: 0; }
+          .inhalt .hinweis { grid-column: 1 / -1; }
+        }
         svg { display: block; width: 100%; }
         circle { fill: transparent; stroke-width: 5; }
         .ring { stroke: var(--divider-color, #e0e0e0); }
-        .bogen { cursor: pointer; transition: stroke-width 0.15s; }
+        .bogen { transition: stroke-width 0.15s; }
         .bogen:hover { stroke-width: 6; }
         text { text-anchor: middle; fill: var(--primary-text-color); }
         .total { font-size: 5px; font-weight: 600; }
         .einheit { font-size: 3px; fill: var(--secondary-text-color); }
         .legende { list-style: none; margin: 16px 0 0; padding: 0; }
         .legende li { display: grid; grid-template-columns: 12px minmax(0, 1fr) auto auto; gap: 8px;
-          align-items: center; padding: 4px 0; cursor: pointer; color: var(--primary-text-color); }
+          align-items: center; padding: 4px 0; color: var(--primary-text-color); }
+        [data-entity] { cursor: pointer; }
         .punkt { width: 12px; height: 12px; border-radius: 50%; }
         .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         .wert, .anteil { white-space: nowrap; font-variant-numeric: tabular-nums; }
         .anteil { min-width: 3.5em; text-align: right; color: var(--secondary-text-color); }
         .leer { color: var(--secondary-text-color); }
+        .hinweis { margin: 8px 0 0; font-size: 12px; color: var(--secondary-text-color); }
       </style>
       <ha-card>${titel}${inhalt}</ha-card>`;
 
@@ -251,6 +309,104 @@ class FinanzcockpitDonutCard extends HTMLElement {
         ),
       ),
     );
+  }
+}
+
+// Balken je Gruppe (Standard: Institut), nur Guthaben, aufgeteilt in Liquidität
+// (Konten, durch die Einlagensicherung geschützt) und übrige Anlagen
+class FinanzcockpitBalkenCard extends HTMLElement {
+  static getStubConfig() {
+    return { title: "Institute", gruppieren: "institut", grenze: 100000 };
+  }
+
+  setConfig(config) {
+    if (config.grenze !== undefined && !(Number(config.grenze) > 0)) {
+      throw new Error("'grenze' muss eine positive Zahl sein");
+    }
+    this._config = { gruppieren: "institut", ...config };
+    this._signatur = undefined;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  getCardSize() {
+    return 5;
+  }
+
+  getGridOptions() {
+    return { columns: 12, min_columns: 6, rows: "auto" };
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    const gruppen = gruppiereKonten(this._hass, this._config.gruppieren, { nurGuthaben: true });
+    const signatur = JSON.stringify([gruppen, this._hass.locale?.language]);
+    if (signatur === this._signatur) return;
+    this._signatur = signatur;
+
+    const sprache = this._hass.locale?.language ?? "de-CH";
+    const zahl = new Intl.NumberFormat(sprache, { maximumFractionDigits: 0 });
+    const grenze = this._config.grenze === undefined ? undefined : Number(this._config.grenze);
+    // Etwas Luft rechts, damit die Grenzlinie nie am Rand klebt
+    const maximum = Math.max(...gruppen.map((g) => g.wert), (grenze ?? 0) * 1.15, 1);
+    const breite = (wert) => `${((wert / maximum) * 100).toFixed(2)}%`;
+
+    const zeilen = gruppen
+      .map((g) => {
+        const titel = `${g.name}: ${zahl.format(g.wert)} CHF, davon Liquidität ${zahl.format(g.liquiditaet)} CHF\n${g.konten.join("\n")}`;
+        // Rot, wenn die Konten allein die Grenze übersteigen
+        const ueber = grenze !== undefined && g.liquiditaet > grenze;
+        return `<li title="${escape(titel)}">
+          <span class="name">${escape(g.name)}</span>
+          <span class="spur"><span class="teil liquiditaet" style="width:${breite(g.liquiditaet)}"></span><span
+            class="teil uebrige" style="width:${breite(g.wert - g.liquiditaet)}"></span></span>
+          <span class="wert${ueber ? " ueber" : ""}">${zahl.format(g.wert)}</span>
+        </li>`;
+      })
+      .join("");
+
+    const linie =
+      grenze === undefined
+        ? ""
+        : `<div class="raster"><span></span><span class="skala"><span class="grenze" style="left:${breite(grenze)}"></span></span><span></span></div>`;
+    const titel = this._config.title ? `<h1 class="titel">${escape(this._config.title)}</h1>` : "";
+    const inhalt = gruppen.length
+      ? `<div class="diagramm"><ul class="zeilen">${zeilen}</ul>${linie}</div>
+        <p class="legende"><span class="punkt liquiditaet"></span>Konten (Liquidität)
+          <span class="punkt uebrige"></span>Wertschriften, Vorsorge, übrige
+          ${grenze === undefined ? "" : `<span class="strich"></span>${zahl.format(grenze)} CHF`}</p>`
+      : `<p class="leer">Keine Werte vorhanden</p>`;
+
+    if (!this.shadowRoot) this.attachShadow({ mode: "open" });
+    this.shadowRoot.innerHTML = `
+      <style>
+        ha-card { padding: 16px; height: 100%; box-sizing: border-box; }
+        .titel { margin: 0 0 12px; font-size: 16px; font-weight: 500; color: var(--primary-text-color); }
+        .diagramm { position: relative; }
+        .zeilen { list-style: none; margin: 0; padding: 0; }
+        .zeilen li, .raster { display: grid; grid-template-columns: minmax(5em, 9em) 1fr 6em; gap: 8px; }
+        .zeilen li { align-items: center; padding: 3px 0; color: var(--primary-text-color); }
+        .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .spur { display: flex; height: 14px; border-radius: 3px; overflow: hidden; }
+        .liquiditaet { background: #3BA7E0; }
+        .uebrige { background: #8E7CC3; }
+        .wert { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+        .wert.ueber { color: var(--error-color, #D9534F); font-weight: 600; }
+        /* Gleiche Spalten wie die Zeilen, damit die Linie auf der Balkenskala liegt */
+        .raster { position: absolute; inset: 0; pointer-events: none; }
+        .skala { position: relative; }
+        .grenze { position: absolute; top: 0; bottom: 0; border-left: 2px dashed var(--error-color, #D9534F); }
+        .legende { margin: 12px 0 0; font-size: 12px; color: var(--secondary-text-color);
+          display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; }
+        .punkt { width: 10px; height: 10px; border-radius: 2px; display: inline-block; margin-left: 6px; }
+        .strich { width: 14px; border-top: 2px dashed var(--error-color, #D9534F); margin-left: 6px; }
+        .leer { color: var(--secondary-text-color); }
+      </style>
+      <ha-card>${titel}${inhalt}</ha-card>`;
   }
 }
 
@@ -506,6 +662,17 @@ export function erzeugeDashboard(hass) {
     { type: "custom:finanzcockpit-donut-card", title: "Währungen (in CHF)", entities: waehrungen },
     { type: "custom:finanzcockpit-donut-card", title: "Anlageklassen", entities: anlageklassen },
   );
+  if (eigene.some((id) => hass.states[id]?.attributes?.konto_id !== undefined)) {
+    vermoegen.push(
+      { type: "custom:finanzcockpit-donut-card", title: "Töpfe (netto, in CHF)", gruppieren: "topf" },
+      {
+        type: "custom:finanzcockpit-balken-card",
+        title: "Guthaben je Institut (in CHF)",
+        gruppieren: "institut",
+        grenze: 100000,
+      },
+    );
+  }
 
   return {
     title: "Finanzen",
@@ -542,6 +709,7 @@ class FinanzcockpitDashboardStrategy extends HTMLElement {
 const definiere = (name, klasse) => customElements.get(name) || customElements.define(name, klasse);
 definiere("finanzcockpit-donut-card", FinanzcockpitDonutCard);
 definiere("finanzcockpit-verlauf-card", FinanzcockpitVerlaufCard);
+definiere("finanzcockpit-balken-card", FinanzcockpitBalkenCard);
 definiere("ll-strategy-dashboard-finanzcockpit", FinanzcockpitDashboardStrategy);
 
 window.customCards = window.customCards || [];
@@ -550,6 +718,11 @@ for (const karte of [
     type: "finanzcockpit-donut-card",
     name: "Finanzcockpit Kuchendiagramm",
     description: "Zeigt die Aufteilung mehrerer Sensoren als Donut mit Legende und Total.",
+  },
+  {
+    type: "finanzcockpit-balken-card",
+    name: "Finanzcockpit Balken je Institut",
+    description: "Summiert die Guthaben je Institut und zeigt eine Grenzlinie, z.B. die Einlagensicherung.",
   },
   {
     type: "finanzcockpit-verlauf-card",

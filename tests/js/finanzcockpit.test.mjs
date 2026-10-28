@@ -16,7 +16,7 @@ globalThis.customElements = {
   define: (name, klasse) => elemente.set(name, klasse),
 };
 
-const { erzeugeDashboard } = await import(
+const { erzeugeDashboard, gruppiereKonten } = await import(
   "../../custom_components/finanzcockpit/frontend/finanzcockpit.js"
 );
 
@@ -46,10 +46,11 @@ const hass = {
 test("Elemente sind registriert", () => {
   assert.ok(elemente.has("finanzcockpit-donut-card"));
   assert.ok(elemente.has("finanzcockpit-verlauf-card"));
+  assert.ok(elemente.has("finanzcockpit-balken-card"));
   assert.ok(elemente.has("ll-strategy-dashboard-finanzcockpit"));
   assert.deepEqual(
     window.customCards.map((k) => k.type),
-    ["finanzcockpit-donut-card", "finanzcockpit-verlauf-card"],
+    ["finanzcockpit-donut-card", "finanzcockpit-balken-card", "finanzcockpit-verlauf-card"],
   );
 });
 
@@ -183,4 +184,83 @@ test("Ohne Werte erscheint ein Hinweis", () => {
 test("Konfiguration ohne Sensoren ist ein Fehler", () => {
   const Karte = elemente.get("finanzcockpit-donut-card");
   assert.throws(() => new Karte().setConfig({}), /'entities'/);
+});
+
+const konten = {
+  ...hass,
+  states: {
+    "sensor.finanzcockpit_lohn": konto("lohn", 80000, "Alltag", "Bank A"),
+    "sensor.finanzcockpit_sparen": konto("sparen", 40000, "Reserve", "Bank A"),
+    "sensor.finanzcockpit_depot": konto("depot", 50000, "Reserve", "Broker", 10),
+    "sensor.finanzcockpit_hypothek": konto("hypothek", -300000, "Haus", "Bank A"),
+    "sensor.finanzcockpit_haus": konto("haus", 200000, "Haus", undefined, 0),
+    "sensor.finanzcockpit_summe_total": sensor(70000),
+    "sensor.fremd_konto": konto("fremd", 1e6, "Alltag", "Bank A"),
+  },
+  entities: undefined,
+};
+
+function konto(konto_id, wert_chf, topf, institut, liquiditaet = 100) {
+  return {
+    state: String(wert_chf),
+    attributes: {
+      konto_id,
+      friendly_name: konto_id,
+      wert_chf,
+      topf,
+      institut,
+      anlageklasse: { Liquidität: liquiditaet, Aktien: 100 - liquiditaet },
+    },
+  };
+}
+
+test("Konten werden nach Attribut gruppiert", () => {
+  assert.deepEqual(
+    gruppiereKonten(konten, "topf").map((g) => [g.name, g.wert]),
+    [["Reserve", 90000], ["Alltag", 80000], ["Haus", -100000]],
+  );
+  // Nur Guthaben, Konten ohne Institut fallen weg
+  const institute = gruppiereKonten(konten, "institut", { nurGuthaben: true });
+  assert.deepEqual(
+    institute.map((g) => [g.name, g.wert, g.liquiditaet]),
+    [["Bank A", 120000, 120000], ["Broker", 50000, 5000]],
+  );
+});
+
+test("Donut nach Topf zeigt nur Töpfe mit positivem Saldo", () => {
+  const Karte = elemente.get("finanzcockpit-donut-card");
+  const karte = new Karte();
+  karte.setConfig({ title: "Töpfe", gruppieren: "topf" });
+  karte.hass = konten;
+  const html = karte.shadowRoot.innerHTML;
+
+  assert.equal((html.match(/class="bogen"/g) ?? []).length, 2);
+  assert.match(html, /Reserve/);
+  // Negative Töpfe stehen im Hinweis statt im Donut
+  assert.equal((html.match(/Haus/g) ?? []).length, 1);
+  assert.match(html, /class="hinweis">Nicht enthalten: Haus -100/);
+  assert.doesNotMatch(html, /data-entity="/);
+  assert.throws(() => new Karte().setConfig({ gruppieren: "" }), /'gruppieren'/);
+});
+
+test("Balken je Institut mit Grenzlinie", () => {
+  const Karte = elemente.get("finanzcockpit-balken-card");
+  const karte = new Karte();
+  karte.setConfig({ title: "Institute", grenze: 100000 });
+  karte.hass = konten;
+  const html = karte.shadowRoot.innerHTML;
+
+  assert.equal((html.match(/<li /g) ?? []).length, 2);
+  assert.match(html, /class="grenze"/);
+  // Bank A liegt mit 120'000 auf Konten über der Grenze
+  assert.equal((html.match(/class="wert ueber"/g) ?? []).length, 1);
+  assert.throws(() => new Karte().setConfig({ grenze: -1 }), /'grenze'/);
+});
+
+test("Dashboard zeigt Töpfe und Institute, wenn Konten vorhanden sind", async () => {
+  const strategie = elemente.get("ll-strategy-dashboard-finanzcockpit");
+  const karten = (await strategie.generate({}, konten)).views[0].sections.flatMap((s) => s.cards);
+
+  assert.ok(karten.some((k) => k.gruppieren === "topf"));
+  assert.ok(karten.some((k) => k.type === "custom:finanzcockpit-balken-card" && k.grenze === 100000));
 });
