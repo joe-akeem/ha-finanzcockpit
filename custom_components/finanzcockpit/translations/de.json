@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Finanzcockpit einrichten",
-        "description": "Das Finanzcockpit liest die Dateien konten.yaml, saldi.csv sowie (optional) kurse.csv und simulation.yaml aus dem Verzeichnis {pfad}. Lege sie dort an und klicke dann auf «Senden».",
+        "description": "Das Finanzcockpit liest die Dateien konten.yaml, saldi.csv sowie (optional) kurse.csv, simulation.yaml und strategie.md aus dem Verzeichnis {pfad}. Lege sie dort an und klicke dann auf «Senden».",
         "data": {
           "dashboard": "Dashboard «Finanzen» in der Seitenleiste anzeigen"
         },
@@ -36,7 +36,7 @@
   "services": {
     "reload": {
       "name": "Dateien neu einlesen",
-      "description": "Liest konten.yaml, saldi.csv, kurse.csv und simulation.yaml neu ein und legt Sensoren für neue Konten an."
+      "description": "Liest konten.yaml, saldi.csv, kurse.csv, simulation.yaml und strategie.md neu ein und legt Sensoren für neue Konten an."
     }
   }
 }

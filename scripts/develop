@@ -11,7 +11,7 @@ ln -sfn ../../custom_components/finanzcockpit config/custom_components/finanzcoc
 
 # Fehlende Datendateien aus den Beispielen kopieren, vorhandene bleiben unverändert
 mkdir -p config/finanzcockpit
-for datei in konten.yaml saldi.csv kurse.csv simulation.yaml; do
+for datei in konten.yaml saldi.csv kurse.csv simulation.yaml strategie.md; do
   [[ -e config/finanzcockpit/$datei ]] || cp "examples/$datei" config/finanzcockpit/
 done
 

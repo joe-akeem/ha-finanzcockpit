@@ -12,7 +12,7 @@ from .const import CONF_DASHBOARD, DOMAIN, SERVICE_RELOAD
 from .coordinator import FinanzcockpitCoordinator
 from .dashboard import async_dashboard_anlegen, async_dashboard_entfernen, async_js_registrieren
 
-PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SELECT, Platform.SENSOR]
+PLATFORMS = [Platform.BUTTON, Platform.NUMBER, Platform.SELECT, Platform.SENSOR, Platform.TODO]
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 type FinanzcockpitConfigEntry = ConfigEntry[FinanzcockpitCoordinator]

@@ -57,4 +57,5 @@ def daten_verzeichnis(hass, tmp_path) -> Path:
     shutil.copy(EXAMPLES / "saldi.csv", verzeichnis)
     shutil.copy(EXAMPLES / "kurse.csv", verzeichnis)
     shutil.copy(EXAMPLES / "simulation.yaml", verzeichnis)
+    shutil.copy(EXAMPLES / "strategie.md", verzeichnis)
     return verzeichnis

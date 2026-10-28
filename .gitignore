@@ -20,11 +20,13 @@ saldi.csv
 plan.yaml
 kurse.csv
 simulation.yaml
+strategie.md
 !examples/konten.yaml
 !examples/saldi.csv
 !examples/plan.yaml
 !examples/kurse.csv
 !examples/simulation.yaml
+!examples/strategie.md
 
 # Lokale HA-Instanz (scripts/develop) – nur die Konfiguration einchecken
 /config/*

@@ -47,6 +47,7 @@ test("Elemente sind registriert", () => {
   assert.ok(elemente.has("finanzcockpit-donut-card"));
   assert.ok(elemente.has("finanzcockpit-verlauf-card"));
   assert.ok(elemente.has("finanzcockpit-balken-card"));
+  assert.ok(elemente.has("finanzcockpit-aufgaben-card"));
   assert.ok(elemente.has("ll-strategy-dashboard-finanzcockpit"));
   assert.deepEqual(
     window.customCards.map((k) => k.type),
@@ -263,4 +264,62 @@ test("Dashboard zeigt Töpfe und Institute, wenn Konten vorhanden sind", async (
 
   assert.ok(karten.some((k) => k.gruppieren === "topf"));
   assert.ok(karten.some((k) => k.type === "custom:finanzcockpit-balken-card" && k.grenze === 100000));
+});
+
+test("Mit strategie.md gibt es die Ansicht «Strategie»", async () => {
+  const strategie = elemente.get("ll-strategy-dashboard-finanzcockpit");
+  const mitAufgaben = {
+    ...hass,
+    states: { ...hass.states, "todo.finanzcockpit_aufgaben": sensor(3, undefined) },
+    entities: { ...hass.entities, "todo.finanzcockpit_aufgaben": { platform: "finanzcockpit" } },
+  };
+  const ansichten = (await strategie.generate({}, mitAufgaben)).views;
+
+  assert.deepEqual(ansichten.map((v) => v.path), ["uebersicht", "strategie"]);
+  const karten = ansichten[1].sections.flatMap((s) => s.cards);
+  assert.ok(karten.some((k) => k.type === "custom:finanzcockpit-aufgaben-card" && k.entity === "todo.finanzcockpit_aufgaben"));
+  assert.ok(karten.some((k) => k.type === "markdown" && k.content.includes("'strategie'")));
+});
+
+test("Aufgaben-Karte gruppiert nach Abschnitt und zeigt den ganzen Text", () => {
+  const Karte = elemente.get("finanzcockpit-aufgaben-card");
+  const karte = new Karte();
+  karte.setConfig({ entity: "todo.finanzcockpit_aufgaben" });
+  const lang = "Offene Baurechnungen bezahlen: zuerst das Baukonto, dann die Tranche <b>";
+  karte.hass = {
+    states: {
+      "todo.finanzcockpit_aufgaben": {
+        state: "1",
+        attributes: {
+          aufgaben: [
+            { uid: "a1", text: lang, erledigt: false, abschnitt: "2026" },
+            { uid: "a2", text: "Spartöpfe eröffnen", erledigt: true, abschnitt: "2026" },
+            { uid: "a3", text: "Dachcheck", erledigt: true, abschnitt: "2027" },
+          ],
+        },
+      },
+    },
+  };
+  const html = karte.shadowRoot.innerHTML;
+
+  assert.equal((html.match(/<h2>/g) ?? []).length, 2);
+  assert.match(html, /1 offen/);
+  assert.match(html, /2027<span class="anzahl">erledigt/);
+  assert.ok(html.includes("dann die Tranche &lt;b&gt;"));
+  assert.equal((html.match(/ checked/g) ?? []).length, 2);
+  assert.throws(() => new Karte().setConfig({}), /'entity'/);
+});
+
+test("Abhaken ruft den To-do-Dienst auf", () => {
+  const Karte = elemente.get("finanzcockpit-aufgaben-card");
+  const karte = new Karte();
+  const aufrufe = [];
+  karte.setConfig({ entity: "todo.finanzcockpit_aufgaben" });
+  karte.hass = { states: {}, callService: (...args) => aufrufe.push(args) };
+  karte._umschalten("a1", true);
+
+  assert.deepEqual(aufrufe, [
+    ["todo", "update_item", { item: "a1", status: "completed" }, { entity_id: "todo.finanzcockpit_aufgaben" }],
+  ]);
+  assert.match(karte.shadowRoot.innerHTML, /fehlt/);
 });

@@ -4,6 +4,7 @@
 //   oder für die Konten, gruppiert nach Topf, Institut usw.
 // - finanzcockpit-balken-card: Balken je Institut mit Grenzlinie (Einlagensicherung)
 // - finanzcockpit-verlauf-card: Liniendiagramm der Vorsorge-Simulation
+// - finanzcockpit-aufgaben-card: Aufgaben aus strategie.md zum Abhaken
 // - Dashboard-Strategie «custom:finanzcockpit»: baut das Dashboard aus den
 //   vorhandenen Sensoren zusammen, neue Konten erscheinen ohne Anpassung
 
@@ -11,6 +12,7 @@ const PLATTFORM = "finanzcockpit";
 const SUMME = `sensor.${PLATTFORM}_summe_`;
 const SIM = `${PLATTFORM}_sim_`;
 const VERLAUF = `sensor.${SIM}verlauf`;
+const AUFGABEN = `todo.${PLATTFORM}_aufgaben`;
 
 // Farben wie im Logo, ergänzt für sechs Anlageklassen und vier Währungen
 const ANLAGEKLASSEN = [
@@ -410,6 +412,108 @@ class FinanzcockpitBalkenCard extends HTMLElement {
   }
 }
 
+class FinanzcockpitAufgabenCard extends HTMLElement {
+  static getStubConfig() {
+    return { entity: AUFGABEN };
+  }
+
+  setConfig(config) {
+    if (!config.entity) throw new Error("'entity' fehlt (z.B. todo.finanzcockpit_aufgaben)");
+    this._config = config;
+    this._signatur = undefined;
+    this._render();
+  }
+
+  set hass(hass) {
+    this._hass = hass;
+    this._render();
+  }
+
+  getCardSize() {
+    return 8;
+  }
+
+  getGridOptions() {
+    return { columns: 12, min_columns: 6, rows: "auto" };
+  }
+
+  // Abhaken schreibt über den To-do-Dienst direkt in strategie.md
+  _umschalten(uid, erledigt) {
+    this._hass.callService(
+      "todo",
+      "update_item",
+      { item: uid, status: erledigt ? "completed" : "needs_action" },
+      { entity_id: this._config.entity },
+    );
+  }
+
+  _render() {
+    if (!this._config || !this._hass) return;
+    const zustand = this._hass.states[this._config.entity];
+    const aufgaben = zustand?.attributes.aufgaben ?? [];
+    const signatur = JSON.stringify([aufgaben, this._config.title, !!zustand]);
+    if (signatur === this._signatur) return;
+    this._signatur = signatur;
+
+    // Reihenfolge der Datei beibehalten, Aufgaben je Abschnitt zusammenfassen
+    const abschnitte = new Map();
+    for (const a of aufgaben) {
+      const name = a.abschnitt ?? "";
+      if (!abschnitte.has(name)) abschnitte.set(name, []);
+      abschnitte.get(name).push(a);
+    }
+    const listen = [...abschnitte]
+      .map(([name, liste]) => {
+        const offen = liste.filter((a) => !a.erledigt).length;
+        const zeilen = liste
+          .map(
+            (a) => `<li class="${a.erledigt ? "erledigt" : ""}"><label>
+              <input type="checkbox" data-uid="${escape(a.uid)}"${a.erledigt ? " checked" : ""}>
+              <span>${escape(a.text)}</span></label></li>`,
+          )
+          .join("");
+        const titel = name
+          ? `<h2>${escape(name)}<span class="anzahl">${offen ? `${offen} offen` : "erledigt"}</span></h2>`
+          : "";
+        return `${titel}<ul>${zeilen}</ul>`;
+      })
+      .join("");
+    const titel = this._config.title ? `<h1 class="titel">${escape(this._config.title)}</h1>` : "";
+    const inhalt = !zustand
+      ? `<p class="leer">${escape(this._config.entity)} fehlt</p>`
+      : aufgaben.length
+        ? listen
+        : `<p class="leer">Keine Aufgaben in strategie.md</p>`;
+
+    if (!this.shadowRoot) {
+      this.attachShadow({ mode: "open" });
+      this.shadowRoot.addEventListener?.("change", (ereignis) => {
+        const feld = ereignis.target;
+        if (feld?.dataset?.uid) this._umschalten(feld.dataset.uid, feld.checked);
+      });
+    }
+    this.shadowRoot.innerHTML = `
+      <style>
+        ha-card { padding: 8px 16px 16px; height: 100%; box-sizing: border-box; }
+        .titel { margin: 8px 0; font-size: 16px; font-weight: 500; color: var(--primary-text-color); }
+        h2 { display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+          margin: 16px 0 4px; font-size: 14px; font-weight: 500; color: var(--primary-text-color); }
+        .anzahl { font-size: 12px; font-weight: 400; color: var(--secondary-text-color); }
+        ul { list-style: none; margin: 0; padding: 0; }
+        li { border-bottom: 1px solid var(--divider-color); }
+        li:last-child { border-bottom: none; }
+        /* Lange Texte umbrechen statt abschneiden */
+        label { display: flex; align-items: flex-start; gap: 12px; padding: 8px 0; cursor: pointer;
+          color: var(--primary-text-color); line-height: 1.4; overflow-wrap: anywhere; }
+        input { flex: none; width: 18px; height: 18px; margin: 1px 0 0; cursor: pointer;
+          accent-color: var(--primary-color); }
+        .erledigt span { color: var(--secondary-text-color); text-decoration: line-through; }
+        .leer { color: var(--secondary-text-color); }
+      </style>
+      <ha-card>${titel}${inhalt}</ha-card>`;
+  }
+}
+
 // Rundet eine Schrittweite auf 1, 2, 2.5 oder 5 × 10^n
 const runderSchritt = (spanne) => {
   const roh = spanne / 4;
@@ -631,6 +735,33 @@ function vorsorgeAnsicht(vorhanden) {
   };
 }
 
+// Strategie (Text aus strategie.md) und Aufgaben zum Abhaken
+function strategieAnsicht() {
+  return {
+    title: "Strategie",
+    path: "strategie",
+    icon: "mdi:compass-outline",
+    type: "sections",
+    max_columns: 2,
+    sections: [
+      {
+        type: "grid",
+        cards: [
+          { type: "heading", heading: "Strategie", icon: "mdi:compass-outline" },
+          { type: "markdown", content: `{{ state_attr('${AUFGABEN}', 'strategie') }}` },
+        ],
+      },
+      {
+        type: "grid",
+        cards: [
+          { type: "heading", heading: "Aufgaben", icon: "mdi:clipboard-check-outline" },
+          { type: "custom:finanzcockpit-aufgaben-card", entity: AUFGABEN },
+        ],
+      },
+    ],
+  };
+}
+
 // Erzeugt die Dashboard-Konfiguration aus den vorhandenen Sensoren
 export function erzeugeDashboard(hass) {
   const eigene = Object.keys(hass.states).filter((id) =>
@@ -695,6 +826,7 @@ export function erzeugeDashboard(hass) {
         ],
       },
       ...(vorhanden.has(VERLAUF) ? [vorsorgeAnsicht(vorhanden)] : []),
+      ...(vorhanden.has(AUFGABEN) ? [strategieAnsicht()] : []),
     ],
   };
 }
@@ -710,6 +842,7 @@ const definiere = (name, klasse) => customElements.get(name) || customElements.d
 definiere("finanzcockpit-donut-card", FinanzcockpitDonutCard);
 definiere("finanzcockpit-verlauf-card", FinanzcockpitVerlaufCard);
 definiere("finanzcockpit-balken-card", FinanzcockpitBalkenCard);
+definiere("finanzcockpit-aufgaben-card", FinanzcockpitAufgabenCard);
 definiere("ll-strategy-dashboard-finanzcockpit", FinanzcockpitDashboardStrategy);
 
 window.customCards = window.customCards || [];

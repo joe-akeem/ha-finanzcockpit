@@ -3,7 +3,7 @@
     "step": {
       "user": {
         "title": "Set up Finanzcockpit",
-        "description": "Finanzcockpit reads konten.yaml, saldi.csv and, optionally, kurse.csv and simulation.yaml from {pfad}. Create the files there, then click Submit.",
+        "description": "Finanzcockpit reads konten.yaml, saldi.csv and, optionally, kurse.csv, simulation.yaml and strategie.md from {pfad}. Create the files there, then click Submit.",
         "data": {
           "dashboard": "Show the «Finanzen» dashboard in the sidebar"
         },
@@ -36,7 +36,7 @@
   "services": {
     "reload": {
       "name": "Reload data files",
-      "description": "Re-reads konten.yaml, saldi.csv, kurse.csv and simulation.yaml and creates sensors for new accounts."
+      "description": "Re-reads konten.yaml, saldi.csv, kurse.csv, simulation.yaml and strategie.md and creates sensors for new accounts."
     }
   }
 }

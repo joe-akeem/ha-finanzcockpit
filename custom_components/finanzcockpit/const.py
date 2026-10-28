@@ -10,6 +10,7 @@ KONTEN_FILE = "konten.yaml"
 SALDI_FILE = "saldi.csv"
 KURSE_FILE = "kurse.csv"
 SIMULATION_FILE = "simulation.yaml"
+STRATEGIE_FILE = "strategie.md"
 
 # Wie oft die Dateien neu eingelesen werden
 UPDATE_INTERVAL = timedelta(minutes=15)

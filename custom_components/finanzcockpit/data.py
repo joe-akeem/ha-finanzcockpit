@@ -17,7 +17,8 @@ from typing import TYPE_CHECKING, Any
 
 import yaml
 
-from .const import KONTEN_FILE, KURSE_FILE, SALDI_FILE, SIMULATION_FILE
+from .const import KONTEN_FILE, KURSE_FILE, SALDI_FILE, SIMULATION_FILE, STRATEGIE_FILE
+from .strategie import Strategie, lade_strategie
 
 if TYPE_CHECKING:
     from .simulation import Simulation
@@ -93,6 +94,8 @@ class FinanzDaten:
     kurse: dict[str, list[Kurs]]
     # Inhalt von simulation.yaml, falls vorhanden
     simulation: Simulation | None = None
+    # Inhalt von strategie.md, falls vorhanden
+    strategie: Strategie | None = None
 
     def aktueller_saldo(self, konto_id: str) -> Saldo | None:
         """Gibt den neuesten Saldo eines Kontos zurück."""
@@ -145,7 +148,7 @@ class FinanzDaten:
 
 
 def lade_daten(verzeichnis: Path, online: dict[str, Kurs] | None = None) -> FinanzDaten:
-    """Liest konten.yaml, saldi.csv, kurse.csv und simulation.yaml aus dem Verzeichnis.
+    """Liest konten.yaml, saldi.csv, kurse.csv, simulation.yaml und strategie.md ein.
 
     `online` sind die zuletzt online geholten Kurse je Währung.
     """
@@ -159,6 +162,8 @@ def lade_daten(verzeichnis: Path, online: dict[str, Kurs] | None = None) -> Fina
     daten = FinanzDaten(konten=konten, saldi=saldi, kurse=kurse)
     if (pfad := verzeichnis / SIMULATION_FILE).is_file():
         daten = replace(daten, simulation=lade_simulation(pfad, daten))
+    if (pfad := verzeichnis / STRATEGIE_FILE).is_file():
+        daten = replace(daten, strategie=lade_strategie(pfad))
     return daten
 
 

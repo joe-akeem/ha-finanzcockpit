@@ -107,6 +107,23 @@ startwerte:
 
 Mögliche Startwerte: `frei`, `saeule3a_er`, `saeule3a_sie`, `pk_er`, `pk_sie`, `de_policen`, `de_fonds`, `liegenschaft`, `hypothek`, `darlehen`. Jedes Konto darf nur in einem Startwert vorkommen. Fremdwährungen werden zum neuesten Kurs umgerechnet. Das Startjahr ist das Jahr des neuesten Saldos (ohne PK), die Rechnung beginnt im Jahr danach.
 
+### `strategie.md`: Strategie und Aufgaben (optional)
+
+Freier Markdown-Text, z.B. eure Anlagestrategie und ein Fahrplan. Zeilen mit `- [ ]` (offen) oder `- [x]` (erledigt) sind Aufgaben. Sie erscheinen als To-do-Liste `todo.finanzcockpit_aufgaben` und lassen sich in Home Assistant abhaken, umbenennen, hinzufügen und löschen. Home Assistant schreibt diese Änderungen in die Datei zurück; der übrige Text bleibt unverändert.
+
+```markdown
+## Leitplanken
+
+- Notgroschen: 30'000 CHF auf dem Sparkonto.
+
+## Aufgaben
+
+- [x] Sparkonto eröffnen
+- [ ] 3a-Einzahlung bis 20. Dezember
+```
+
+Neue Aufgaben kommen nach der letzten Aufgabe, ohne Aufgaben in einen neuen Abschnitt «Aufgaben». Die Überschrift über einer Aufgabe erscheint als deren Beschreibung.
+
 ## Was die Integration anlegt
 
 | Entität | Inhalt |
@@ -127,6 +144,8 @@ Mit `simulation.yaml` zusätzlich:
 | `sensor.finanzcockpit_sim_<kennzahl>` | Kennzahlen des gewählten Szenarios mit den Regler-Werten: `vorsorgeluecke` (pro Monat), `frei_pension_er`, `frei_pension_sie`, `frei_ende`, `tiefster_stand`, `erstes_negatives_jahr`, `belehnung`, `tragbarkeit`, `nettovermoegen_ende`, `steuern_summe`. Beträge in heutigen CHF, sofern das Attribut `heutige_chf` nicht `false` ist |
 | `sensor.finanzcockpit_sim_verlauf` | Name des Szenarios; Attribut `jahre` mit den Jahreswerten für Diagramme, dazu `warnungen` |
 | `sensor.finanzcockpit_sim_vergleich` | Anzahl Szenarien; Attribut `szenarien` mit den Kennzahlen aller Szenarien, so wie sie in der Datei stehen |
+
+Mit `strategie.md` zusätzlich `todo.finanzcockpit_aufgaben`: die Aufgaben als To-do-Liste, Zustand = Anzahl offener Aufgaben. Das Attribut `strategie` enthält den Text ohne die Aufgaben und wird nicht in der Verlaufsdatenbank gespeichert.
 
 Szenario und Regler-Werte bleiben über einen Neustart erhalten. Die Attribute `jahre` und `szenarien` werden nicht in der Verlaufsdatenbank gespeichert.
 
@@ -156,7 +175,7 @@ Das Finanzcockpit bringt ein eigenes Dashboard und eine Kuchendiagramm-Karte mit
 
   Mit ✎ → «Kontrolle übernehmen» wird daraus ein frei bearbeitbares Dashboard.
 
-Beide zeigen das Total, Kuchendiagramme nach Währungen, Anlageklassen und Töpfen, Balken je Institut mit der Grenze der Einlagensicherung und eine Tabelle aller Konten. Neue Konten und Währungen erscheinen ohne Anpassung. Mit `simulation.yaml` kommt die Ansicht «Vorsorge» dazu: Szenario-Auswahl und Regler, Kennzahlen mit Warnungen, Verlauf von Vermögen, Hypothek, Renten und Ausgaben sowie ein Vergleich aller Szenarien.
+Beide zeigen das Total, Kuchendiagramme nach Währungen, Anlageklassen und Töpfen, Balken je Institut mit der Grenze der Einlagensicherung und eine Tabelle aller Konten. Neue Konten und Währungen erscheinen ohne Anpassung. Mit `strategie.md` kommt die Ansicht «Strategie» mit dem Text und den Aufgaben dazu. Mit `simulation.yaml` kommt die Ansicht «Vorsorge» dazu: Szenario-Auswahl und Regler, Kennzahlen mit Warnungen, Verlauf von Vermögen, Hypothek, Renten und Ausgaben sowie ein Vergleich aller Szenarien.
 
 Nach der Installation oder einem Update die Seite im Browser einmal vollständig neu laden (Cmd+Shift+R bzw. Ctrl+Shift+R). Sonst meldet das Dashboard «Timeout waiting for strategy element», weil der Browser die Karte noch nicht geladen hat.
 
@@ -187,6 +206,16 @@ gruppieren: institut       # optional, Standard: institut
 grenze: 100000             # optional
 ```
 
+### Karte `finanzcockpit-aufgaben-card`
+
+Zeigt die Aufgaben aus `strategie.md` gruppiert nach Abschnitt, mit ganzem Text statt abgeschnittener Zeilen. Abhaken schreibt direkt in die Datei. Neue Aufgaben fügst du in der Datei oder unter «To-do lists» hinzu.
+
+```yaml
+type: custom:finanzcockpit-aufgaben-card
+entity: todo.finanzcockpit_aufgaben
+title: Aufgaben            # optional
+```
+
 ### Karte `finanzcockpit-verlauf-card`
 
 Zeigt die Jahreswerte der Simulation als Liniendiagramm mit Marken bei den Pensionierungen. Beim Überfahren erscheinen die Werte des Jahres.
@@ -207,7 +236,7 @@ Weitere Reihen: `hypothek_real`, `ausgaben_real`. Alle Werte in heutigen CHF.
 
 ## Datenschutz
 
-Echte Finanzdaten gehören **nie** in dieses Repository. Die `.gitignore` schliesst `konten.yaml`, `saldi.csv`, `plan.yaml`, `kurse.csv` und `simulation.yaml` ausserhalb von `examples/` aus. Verwende keine vollständigen IBANs als Konto-ID oder Name. Die IBAN im Feld `iban` erscheint als Attribut und landet damit auch in der Verlaufsdatenbank von Home Assistant. Wer das nicht möchte, lässt das Feld weg.
+Echte Finanzdaten gehören **nie** in dieses Repository. Die `.gitignore` schliesst `konten.yaml`, `saldi.csv`, `plan.yaml`, `kurse.csv`, `simulation.yaml` und `strategie.md` ausserhalb von `examples/` aus. Verwende keine vollständigen IBANs als Konto-ID oder Name. Die IBAN im Feld `iban` erscheint als Attribut und landet damit auch in der Verlaufsdatenbank von Home Assistant. Wer das nicht möchte, lässt das Feld weg.
 
 ## Entwicklung
 
